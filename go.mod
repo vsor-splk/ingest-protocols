@@ -6,7 +6,6 @@ replace git.apache.org/thrift.git => github.com/signalfx/thrift v0.0.0-201812110
 
 require (
 	github.com/apache/thrift v0.0.0-20180411174621-858809fad01d
-	github.com/axw/gocov v1.0.0 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/etcd v3.3.18+incompatible
@@ -27,7 +26,8 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
 	github.com/signalfx/embetcd v0.0.9
 	github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15
-	github.com/signalfx/golib/v3 v3.2.0
+	github.com/signalfx/golib/v3 v3.2.1
+	github.com/signalfx/sapm-proto v0.4.0
 	github.com/signalfx/xdgbasedir v0.0.0-20160106035722-cd6a71c07e4e
 	github.com/smartystreets/assertions v1.0.1
 	github.com/smartystreets/goconvey v1.6.4
