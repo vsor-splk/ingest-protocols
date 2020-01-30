@@ -2,23 +2,24 @@ package signalfx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 
-	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
-
-	"github.com/signalfx/golib/v3/datapoint/dpsink"
-
 	"github.com/gorilla/mux"
+	jaegerpb "github.com/jaegertracing/jaeger/model"
 	"github.com/mailru/easyjson"
-	"github.com/signalfx/golib/v3/errors"
+	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/log"
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/trace"
+	"github.com/signalfx/golib/v3/trace/translator"
 	"github.com/signalfx/golib/v3/web"
+	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
+	splunksapm "github.com/signalfx/sapm-proto/gen"
 )
 
 const (
@@ -54,12 +55,37 @@ func (is *InputSpan) isDefinitelyZipkinV2() bool {
 	return is.Span.Kind != nil || len(is.Span.Tags) > 0 || is.Span.LocalEndpoint != nil || is.Span.RemoteEndpoint != nil
 }
 
+// V2AnnotationsToJaegerLogs converts ZipkinV2 or SignalFx annotations to jaeger logs
+func (is *InputSpan) v2AnnotationsToJaegerLogs(annotations []*signalfxformat.InputAnnotation) []jaegerpb.Log {
+	logs := make([]jaegerpb.Log, 0, len(annotations))
+	for _, ann := range annotations {
+		if ann.Value == nil {
+			continue
+		}
+		l := jaegerpb.Log{}
+		if ann.Timestamp != nil {
+			l.Timestamp = translator.TimeFromMicrosecondsSinceEpoch(int64(*ann.Timestamp))
+		}
+		var err error
+		l.Fields, err = translator.FieldsFromJSONString(*ann.Value)
+		if err != nil {
+			// We are choosing to drop the log line and not the span under the philosophy that
+			// for users it is better to miss a  tag or logline instead of missing the entire operation.
+			continue
+		}
+		logs = append(logs, l)
+	}
+	return logs
+}
+
+var errSpansCannotHaveBinaryAnnotations = errors.New("span cannot have binaryAnnotations with Zipkin V2 fields")
+
 // asZipkinV2 shortcuts the span conversion process and treats the InputSpan as
 // ZipkinV2 and returns that span directly.
 func (is *InputSpan) fromZipkinV2() (*trace.Span, error) {
 	// Do some basic validation
 	if len(is.BinaryAnnotations) > 0 {
-		return nil, errors.New("span cannot have binaryAnnotations with Zipkin V2 fields")
+		return nil, errSpansCannotHaveBinaryAnnotations
 	}
 
 	if len(is.Annotations) > 0 {
@@ -71,6 +97,62 @@ func (is *InputSpan) fromZipkinV2() (*trace.Span, error) {
 	is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
 
 	return &is.Span, nil
+}
+
+// JaegerFromZipkinV2 shortcuts the span conversion process and treats the InputSpan as
+// ZipkinV2 and returns that span directly as SAPM.
+func (is *InputSpan) JaegerFromZipkinV2() (*jaegerpb.Span, error) {
+	// Do some basic validation
+	if len(is.BinaryAnnotations) > 0 {
+		return nil, errors.New("span cannot have binaryAnnotations with Zipkin V2 fields")
+	}
+
+	var err error
+	var span = &jaegerpb.Span{Process: &jaegerpb.Process{}}
+
+	span.SpanID, err = jaegerpb.SpanIDFromString(is.ID)
+	if err == nil {
+		span.TraceID, err = jaegerpb.TraceIDFromString(is.TraceID)
+		if err == nil {
+
+			if is.Name != nil {
+				span.OperationName = *is.Name
+			}
+
+			if is.Duration != nil {
+				span.Duration = translator.DurationFromMicroseconds(int64(*is.Duration))
+			}
+
+			if is.Timestamp != nil {
+				span.StartTime = translator.TimeFromMicrosecondsSinceEpoch(int64(*is.Timestamp))
+			}
+
+			if is.Debug != nil && *is.Debug {
+				span.Flags.SetDebug()
+			}
+
+			span.Tags, span.Process.Tags = translator.SFXTagsToJaegerTags(is.Tags, is.RemoteEndpoint, is.Kind)
+
+			translator.GetLocalEndpointInfo(&is.Span, span)
+
+			is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
+
+			if is.Span.ParentID != nil {
+				// only add parent/child reference if the parent id can be parsed
+				if parentID, err := jaegerpb.SpanIDFromString(*is.Span.ParentID); err == nil {
+					span.References = append(span.References, jaegerpb.SpanRef{
+						TraceID: span.TraceID,
+						SpanID:  parentID,
+						RefType: jaegerpb.SpanRefType_CHILD_OF,
+					})
+				}
+			}
+
+			span.Logs = is.v2AnnotationsToJaegerLogs(is.Annotations)
+		}
+	}
+
+	return span, err
 }
 
 // asTraceSpan should be used when we are not sure that the InputSpan is
@@ -543,6 +625,58 @@ func normalizeParentSpanID(parentSpanID *string) *string {
 		return nil
 	}
 	return parentSpanID
+}
+
+// ParseMapOfJaegerBatchesFromRequest parses a signalfx, zipkinV1, or zipkinV2 json request into an array of jaeger batches
+func ParseMapOfJaegerBatchesFromRequest(req *http.Request) (map[[32]byte]*jaegerpb.Batch, error) {
+	var input signalfxformat.InputSpanList
+	if err := easyjson.UnmarshalFromReader(req.Body, &input); err != nil {
+		return nil, errInvalidJSONTraceFormat
+	}
+
+	batcher := translator.SpanBatcher{}
+
+	// Don't let an error converting one set of spans prevent other valid spans
+	// in the same request from being rejected.
+	var conversionErrs *traceErrs
+	for _, is := range input {
+		inputSpan := (*InputSpan)(is)
+		if inputSpan.isDefinitelyZipkinV2() {
+			s, err := inputSpan.JaegerFromZipkinV2()
+			if err != nil {
+				conversionErrs = conversionErrs.Append(err)
+				continue
+			}
+			batcher.Add(s)
+		} else {
+			// TODO: optimize conversion of zipkin v1 to SAPM
+			derived, err := inputSpan.fromZipkinV1()
+			if err != nil {
+				conversionErrs = conversionErrs.Append(err)
+				continue
+			}
+
+			// Zipkin v1 spans can map to multiple spans in Zipkin v2
+			for _, s := range derived {
+				batcher.Add(translator.SAPMSpanFromSFXSpan(s))
+			}
+		}
+	}
+
+	return batcher.Buckets, conversionErrs.ToError(nil)
+}
+
+// ParseSAPMFromRequest parses a signalfx, zipkinV1 or zipkinV2 json request into SAPM
+func ParseSAPMFromRequest(req *http.Request) (*splunksapm.PostSpansRequest, error) {
+	var sapm *splunksapm.PostSpansRequest
+	batches, err := ParseMapOfJaegerBatchesFromRequest(req)
+	if err == nil {
+		sapm = &splunksapm.PostSpansRequest{Batches: make([]*jaegerpb.Batch, 0, len(batches))}
+		for _, s := range batches {
+			sapm.Batches = append(sapm.GetBatches(), s)
+		}
+	}
+	return sapm, err
 }
 
 // JSONTraceDecoderV1 decodes json to structs
