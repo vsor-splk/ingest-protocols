@@ -631,7 +631,7 @@ func normalizeParentSpanID(parentSpanID *string) *string {
 func ParseMapOfJaegerBatchesFromRequest(req *http.Request) (map[[32]byte]*jaegerpb.Batch, error) {
 	var input signalfxformat.InputSpanList
 	if err := easyjson.UnmarshalFromReader(req.Body, &input); err != nil {
-		return nil, errInvalidJSONTraceFormat
+		return nil, ErrInvalidJSONTraceFormat
 	}
 
 	batcher := translator.SpanBatcher{}
@@ -685,13 +685,14 @@ type JSONTraceDecoderV1 struct {
 	Sink   trace.Sink
 }
 
-var errInvalidJSONTraceFormat = errors.New("invalid JSON format; please see correct format at https://zipkin.io/zipkin-api/#/default/post_spans")
+// ErrInvalidJSONTraceFormat is returned when we are unable to decode the request payload into []signalfxformat.InputSpan
+var ErrInvalidJSONTraceFormat = errors.New("invalid JSON format; please see correct format at https://zipkin.io/zipkin-api/#/default/post_spans")
 
 // Read the data off the wire in json format
 func (decoder *JSONTraceDecoderV1) Read(ctx context.Context, req *http.Request) error {
 	var input signalfxformat.InputSpanList
 	if err := easyjson.UnmarshalFromReader(req.Body, &input); err != nil {
-		return errInvalidJSONTraceFormat
+		return ErrInvalidJSONTraceFormat
 	}
 
 	if len(input) == 0 {
