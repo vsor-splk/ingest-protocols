@@ -48,6 +48,7 @@ func grabHealthCheck(t *testing.T, baseURI string, status int) {
 	So(err, ShouldBeNil)
 	resp, err := client.Do(req)
 	So(err, ShouldBeNil)
+	resp.Body.Close()
 	So(resp.StatusCode, ShouldEqual, status)
 }
 

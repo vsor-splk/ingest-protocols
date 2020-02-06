@@ -72,8 +72,8 @@ func TestFromChain(t *testing.T) {
 	e0 := expect{count: 0}
 
 	chain := FromChain(&e2, e0.next, e1.next)
-	log.IfErr(log.Panic, chain.AddDatapoints(nil, []*datapoint.Datapoint{}))
-	log.IfErr(log.Panic, chain.AddEvents(nil, []*event.Event{}))
+	log.IfErr(log.Panic, chain.AddDatapoints(context.TODO(), []*datapoint.Datapoint{}))
+	log.IfErr(log.Panic, chain.AddEvents(context.TODO(), []*event.Event{}))
 }
 
 func TestIncludingDimensions(t *testing.T) {

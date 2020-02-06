@@ -129,7 +129,7 @@ func (decoder *JSONDecoder) Read(ctx context.Context, req *http.Request) error {
 
 func (decoder *JSONDecoder) defaultDims(req *http.Request) map[string]string {
 	params := req.URL.Query()
-	defaultDims := make(map[string]string, 0)
+	defaultDims := make(map[string]string)
 	for key := range params {
 		if strings.HasPrefix(key, sfxDimQueryParamPrefix) {
 			value := params.Get(key)

@@ -114,12 +114,14 @@ func TestCarbonForwarderNormal(t *testing.T) {
 				So(tailErr.Timeout(), ShouldBeTrue)
 			}
 			Convey("Should respect ctx cancel", func() {
-				ctx, cancel := context.WithTimeout(ctx, time.Millisecond)
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, time.Millisecond)
 				eventuallyTimesOut(ctx)
 				cancel()
 			})
 			Convey("Should respect internal timeout", func() {
-				ctx, cancel := context.WithTimeout(ctx, time.Hour*100)
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, time.Hour*100)
 				eventuallyTimesOut(ctx)
 				cancel()
 			})
@@ -147,7 +149,8 @@ func TestCarbonListenerNormalTCP(t *testing.T) {
 
 		Convey("sending invalid datapoint with a valid datapoint still emits valid datapoint", func() {
 			connAddr := fmt.Sprintf("127.0.0.1:%d", nettest.TCPPort(listener))
-			s, err := net.Dial("tcp", connAddr)
+			var s net.Conn
+			s, err = net.Dial("tcp", connAddr)
 			So(err, ShouldBeNil)
 			_, err = io.WriteString(s, "hello world bob\ndice.roll 3 3\n")
 			So(err, ShouldBeNil)
@@ -311,7 +314,8 @@ func TestCarbonListenerNormalUDP(t *testing.T) {
 
 		Convey("sending invalid datapoint with a valid datapoint still emits valid datapoint", func() {
 			connAddr := fmt.Sprintf("127.0.0.1:%d", (uint16)(listener.Addr().(*net.UDPAddr).Port))
-			s, err := net.Dial("udp", connAddr)
+			var s net.Conn
+			s, err = net.Dial("udp", connAddr)
 			So(err, ShouldBeNil)
 			_, err = io.WriteString(s, "hello world bob\ndice.roll 3 3\n")
 			So(err, ShouldBeNil)
@@ -335,7 +339,8 @@ func TestCarbonListenerNormalUDP(t *testing.T) {
 			So(dptest.ExactlyOne(dps, "invalid_datapoints").Value.String(), ShouldEqual, "0")
 
 			connAddr := fmt.Sprintf("127.0.0.1:%d", (uint16)(listener.Addr().(*net.UDPAddr).Port))
-			s, err := net.Dial("udp", connAddr)
+			var s net.Conn
+			s, err = net.Dial("udp", connAddr)
 			So(err, ShouldBeNil)
 			_, err = io.WriteString(s, "hello world bob\n")
 			So(err, ShouldBeNil)
@@ -443,5 +448,6 @@ func TestInvalidConnection(t *testing.T) {
 		So(err, ShouldBeNil)
 		listener, err = NewListener(sendTo, listenFrom)
 		So(err, ShouldNotBeNil)
+		So(listener, ShouldBeNil)
 	})
 }

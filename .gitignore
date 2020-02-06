@@ -16,3 +16,6 @@
 
 # IDEs
 .idea/
+
+# Test coverage output
+coverage.out.all

@@ -33,7 +33,7 @@ var validRegexConfig = `{
 }`
 
 func getRegexData(t *testing.T, data string) map[string]interface{} {
-	dat := make(map[string]interface{}, 0)
+	dat := make(map[string]interface{})
 	err := json.Unmarshal([]byte(data), &dat)
 	assert.NoError(t, err)
 	return dat

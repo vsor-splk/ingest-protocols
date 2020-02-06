@@ -56,7 +56,7 @@ func TestParseForwardTimeout(t *testing.T) {
 	config, err := decodeConfig([]byte(`{"ForwardTo":[{"Timeout":"3s"}]}`))
 	assert.Nil(t, err)
 	assert.Equal(t, *config.ForwardTo[0].TimeoutDuration, time.Second*3)
-	config, err = decodeConfig([]byte(`{"ForwardTo":[{"Timeout":"3r"}]}`))
+	_, err = decodeConfig([]byte(`{"ForwardTo":[{"Timeout":"3r"}]}`))
 	assert.Error(t, err)
 }
 
@@ -74,7 +74,7 @@ func TestParseListenFromTimeout(t *testing.T) {
 	config, err := decodeConfig([]byte(`{"ListenFrom":[{"Timeout":"3s"}]}`))
 	assert.Nil(t, err)
 	assert.Equal(t, *config.ListenFrom[0].TimeoutDuration, time.Second*3, "Shouldn't fail parsing")
-	config, err = decodeConfig([]byte(`{"ListenFrom":[{"Timeout":"3r"}]}`))
+	_, err = decodeConfig([]byte(`{"ListenFrom":[{"Timeout":"3r"}]}`))
 	assert.Error(t, err)
 }
 
@@ -301,6 +301,7 @@ func TestGatewayConfig_ToEtcdConfig(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := &GatewayConfig{
 				ForwardTo:                      tt.fields.ForwardTo,

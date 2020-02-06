@@ -45,7 +45,7 @@ func (p *ProcessDebug) AddSpans(ctx context.Context, spans []*trace.Span) error 
 			s.Tags[spTagName] = "1"
 			continue
 		}
-		if s.Tags != nil && "1" == s.Tags[spTagName] {
+		if s.Tags != nil && s.Tags[spTagName] == "1" {
 			s.Debug = pointer.Bool(true)
 		}
 	}

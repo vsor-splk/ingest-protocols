@@ -59,6 +59,7 @@ func Test(t *testing.T) {
 	}
 	Convey("test tag replace", t, func() {
 		for _, tc := range cases {
+			tc := tc
 			Convey("Testing case: "+tc.desc, func() {
 				e := &end{}
 				tr, err := New(tc.rules, tc.exitEarly, e)

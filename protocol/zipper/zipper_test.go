@@ -20,13 +20,12 @@ func (f *foo) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(req.Body)
 	if err == nil {
-		if "OK" == string(buf.Bytes()) {
+		if buf.String() == "OK" {
 			rw.WriteHeader(http.StatusOK)
 		}
 	}
 	fmt.Println(err)
 	rw.WriteHeader(http.StatusBadRequest)
-	return
 }
 
 func Test(t *testing.T) {
@@ -54,6 +53,7 @@ func Test(t *testing.T) {
 			{badZippers, "test gzipped failure", zipped.Bytes(), http.StatusBadRequest, map[string]string{"Content-Encoding": "gzip"}},
 		}
 		for _, test := range tests {
+			test := test
 			Convey(test.name, func() {
 				req, err := http.NewRequest("GET", "/health-check", bytes.NewBuffer(test.data))
 				for k, v := range test.headers {

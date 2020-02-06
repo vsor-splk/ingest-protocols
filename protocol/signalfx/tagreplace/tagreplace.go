@@ -76,7 +76,7 @@ func (t *TagReplace) AddSpans(ctx context.Context, spans []*trace.Span) error {
 
 // New returns you a new TagReplace object
 func New(ruleStrings []string, exitEarly bool, next sink) (*TagReplace, error) {
-	var rules []*regexp.Regexp
+	var rules = make([]*regexp.Regexp, 0, len(ruleStrings))
 	for _, r := range ruleStrings {
 		var err error
 		var rp *regexp.Regexp

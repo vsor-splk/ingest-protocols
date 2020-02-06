@@ -107,6 +107,7 @@ func TestListener(t *testing.T) {
 			So(err, ShouldBeNil)
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 			So(atomic.LoadInt64(&callCount), ShouldEqual, 1)
 		})
@@ -117,6 +118,7 @@ func TestListener(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 			datapoints := <-sendTo.PointsChan
 			So(len(datapoints), ShouldEqual, 1)
@@ -176,6 +178,7 @@ func TestBad(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 		})
 		Convey("Should bork bad readAll", func() {
@@ -187,6 +190,7 @@ func TestBad(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
 		})
 		Convey("Should bork on bad data", func() {
@@ -197,6 +201,7 @@ func TestBad(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 		})
 		Convey("count bad datapoint", func() {
@@ -207,6 +212,7 @@ func TestBad(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 			for atomic.LoadInt64(&listener.decoder.TotalBadDatapoints) != 1 {
 				runtime.Gosched()
@@ -219,6 +225,7 @@ func TestBad(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
 		})
 		Reset(func() {

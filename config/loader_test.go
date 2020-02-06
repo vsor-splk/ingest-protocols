@@ -49,6 +49,7 @@ func TestForwarders(t *testing.T) {
 			{name: "signalfx forwarder with distributor and smart gateway are incompatible", forwardTo: &ForwardTo{Type: "signalfx", TraceDistributor: &sampling.SmartSampleConfig{}, TraceSample: &sampling.SmartSampleConfig{}}, pass: false},
 		}
 		for _, test := range tests {
+			test := test
 			Convey(test.name, func() {
 				f, err := l.Forwarder(test.forwardTo)
 				if test.pass {
@@ -79,6 +80,7 @@ func TestListeners(t *testing.T) {
 			{name: "should load carbon listener", listenFrom: &ListenFrom{Type: "carbon", ListenAddr: pointer.String("127.0.0.1:0")}, pass: true},
 		}
 		for _, test := range tests {
+			test := test
 			Convey(test.name, func() {
 				f, err := l.Listener(nil, test.listenFrom)
 				if test.pass {

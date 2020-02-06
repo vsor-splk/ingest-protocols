@@ -194,6 +194,7 @@ func TestCollectDListener(t *testing.T) {
 			So(err, ShouldBeNil)
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 			So(atomic.LoadInt64(&callCount), ShouldEqual, 1)
 		})
@@ -206,6 +207,7 @@ func TestCollectDListener(t *testing.T) {
 				req.Header.Set("Content-Type", "application/json")
 				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
+				resp.Body.Close()
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 				datapoints = <-sendTo.PointsChan
 				So(len(datapoints), ShouldEqual, 8)
@@ -239,6 +241,7 @@ func TestCollectDListener(t *testing.T) {
 			dps := listener.Datapoints()
 			So(dptest.ExactlyOne(dps, "invalid_collectd_json").Value.String(), ShouldEqual, "0")
 			resp, err := client.Do(req)
+			resp.Body.Close()
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 			dps = listener.Datapoints()

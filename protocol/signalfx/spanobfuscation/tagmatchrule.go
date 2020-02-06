@@ -24,7 +24,7 @@ type TagMatchRuleConfig struct {
 }
 
 func getRules(ruleConfigs []*TagMatchRuleConfig) ([]*rule, error) {
-	var rules []*rule
+	var rules = make([]*rule, 0, len(ruleConfigs))
 	for _, r := range ruleConfigs {
 		service := "*"
 		if r.Service != nil {

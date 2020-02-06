@@ -276,6 +276,7 @@ func TestZipkinTraceDecoder(t *testing.T) {
 
 // Tests converted from
 // https://github.com/openzipkin/zipkin/blob/2.8.4/zipkin/src/test/java/zipkin/internal/V2SpanConverterTest.java
+// nolint:funlen
 func TestZipkinTraceConversion(t *testing.T) {
 	frontend := &trace.Endpoint{
 		ServiceName: pointer.String("frontend"),
@@ -1438,6 +1439,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 	})
 }
 
+// nolint:funlen
 func TestParseSAPMFromRequest(t *testing.T) {
 	Convey("SignalFx / Zipkin v2 spans get converted to jaeger batches", t, func() {
 		// the following test data comes from the github.com/signalfx/golib/trace/translator tests
@@ -1991,7 +1993,7 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		}
 
 		span := []*InputSpan{
-			&InputSpan{
+			{
 				Span: trace.Span{
 					TraceID: "1",
 					Name:    pointer.String("test"),
@@ -2010,48 +2012,48 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		}
 
 		want := []*jaegerpb.Batch{
-			&jaegerpb.Batch{
+			{
 				Process: jaegerpb.NewProcess("frontend", []jaegerpb.KeyValue{
-					jaegerpb.KeyValue{
+					{
 						Key:   "ip",
 						VStr:  "127.0.0.1",
 						VType: jaegerpb.ValueType_STRING,
 					},
 				}),
 				Spans: []*jaegerpb.Span{
-					&jaegerpb.Span{
+					{
 						TraceID:       jaegerpb.NewTraceID(0x0, 0x1),
 						SpanID:        jaegerpb.NewSpanID(2),
 						OperationName: "test",
 						Logs:          []jaegerpb.Log{},
 						Tags: []jaegerpb.KeyValue{
-							jaegerpb.KeyValue{
+							{
 								Key:   "bool",
 								VStr:  "true",
 								VType: jaegerpb.ValueType_STRING,
 							},
-							jaegerpb.KeyValue{
+							{
 								Key: "bytes",
 								// byte arrays are json marshalled into base64
 								VStr:  base64.StdEncoding.EncodeToString([]byte("hello")),
 								VType: jaegerpb.ValueType_STRING,
 							},
-							jaegerpb.KeyValue{
+							{
 								Key:   "short",
 								VStr:  "20",
 								VType: jaegerpb.ValueType_STRING,
 							},
-							jaegerpb.KeyValue{
+							{
 								Key:   "int",
 								VStr:  "32800",
 								VType: jaegerpb.ValueType_STRING,
 							},
-							jaegerpb.KeyValue{
+							{
 								Key:   "long",
 								VStr:  "2147483700",
 								VType: jaegerpb.ValueType_STRING,
 							},
-							jaegerpb.KeyValue{
+							{
 								Key:   "double",
 								VStr:  "3.1415",
 								VType: jaegerpb.ValueType_STRING,
@@ -2147,9 +2149,8 @@ func sortLogs(t []jaegerpb.Log) {
 	sort.Slice(t, func(i, j int) bool {
 		return t[i].String() <= t[j].String()
 	})
-	// noscopelint
-	for _, l := range t {
-		sortTags(l.Fields)
+	for i := 0; i < len(t); i++ {
+		sortTags(t[i].Fields)
 	}
 }
 

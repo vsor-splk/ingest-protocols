@@ -62,6 +62,7 @@ func TestGetRules(t *testing.T) {
 	}
 	Convey("we should create a valid SpanTagRemoval with", t, func() {
 		for _, tc := range cases {
+			tc := tc
 			Convey(tc.desc, func() {
 				r, err := getRules(tc.config)
 				So(err, ShouldBeNil)

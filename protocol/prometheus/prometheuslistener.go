@@ -138,7 +138,7 @@ func (d *decoder) getDatapoints(ts *prompb.TimeSeries) []*datapoint.Datapoint {
 // ServeHTTPC decodes datapoints for the connection and sends them to the decoder's sink
 func (d *decoder) ServeHTTPC(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 	start := time.Now()
-	defer d.Bucket.Add(float64(time.Now().Sub(start).Nanoseconds()))
+	defer d.Bucket.Add(float64(time.Since(start).Nanoseconds()))
 	var err error
 	var compressed []byte
 	defer func() {
@@ -230,7 +230,7 @@ func NewListener(sink dpsink.Sink, passedConf *Config) (*Server, error) {
 		fullHandler.Add(web.NextHTTP(metricTracking.ServeHTTP))
 		fullHandler.Add(conf.HTTPChain)
 	}
-	decoder := decoder{
+	d := decoder{
 		SendTo:  sink,
 		Logger:  conf.Logger,
 		readAll: ioutil.ReadAll,
@@ -251,10 +251,10 @@ func NewListener(sink dpsink.Sink, passedConf *Config) (*Server, error) {
 			ReadTimeout:  *conf.Timeout,
 			WriteTimeout: *conf.Timeout,
 		},
-		decoder: &decoder,
+		decoder: &d,
 		collector: sfxclient.NewMultiCollector(
 			metricTracking,
-			&decoder),
+			&d),
 	}
 	listenServer.SetupHealthCheck(conf.HealthCheck, r, conf.Logger)
 	httpHandler := web.NewHandler(conf.StartingContext, listenServer.decoder)

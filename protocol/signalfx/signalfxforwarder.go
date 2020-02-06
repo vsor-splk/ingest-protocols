@@ -172,7 +172,7 @@ func (connector *Forwarder) AddDatapoints(ctx context.Context, datapoints []*dat
 	start := time.Now()
 	atomic.AddInt64(&connector.stats.pipeline, int64(len(datapoints)))
 	defer atomic.AddInt64(&connector.stats.pipeline, -int64(len(datapoints)))
-	defer connector.stats.requests.Add(float64(time.Now().Sub(start).Nanoseconds()))
+	defer connector.stats.requests.Add(float64(time.Since(start).Nanoseconds()))
 	defer connector.stats.drainSize.Add(float64(len(datapoints)))
 	atomic.AddInt64(&connector.stats.totalDatapointsForwarded, int64(len(datapoints)))
 	datapoints = connector.emptyMetricNameFilter.FilterDatapoints(datapoints)

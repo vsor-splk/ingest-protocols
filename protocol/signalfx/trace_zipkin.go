@@ -99,6 +99,19 @@ func (is *InputSpan) fromZipkinV2() (*trace.Span, error) {
 	return &is.Span, nil
 }
 
+func (is *InputSpan) addParentChildSpanReferenceToJaegerSpan(span *jaegerpb.Span) error {
+	// only add parent/child reference if the parent id can be parsed
+	parentID, err := jaegerpb.SpanIDFromString(*is.Span.ParentID)
+	if err == nil {
+		span.References = append(span.References, jaegerpb.SpanRef{
+			TraceID: span.TraceID,
+			SpanID:  parentID,
+			RefType: jaegerpb.SpanRefType_CHILD_OF,
+		})
+	}
+	return err
+}
+
 // JaegerFromZipkinV2 shortcuts the span conversion process and treats the InputSpan as
 // ZipkinV2 and returns that span directly as SAPM.
 func (is *InputSpan) JaegerFromZipkinV2() (*jaegerpb.Span, error) {
@@ -138,14 +151,7 @@ func (is *InputSpan) JaegerFromZipkinV2() (*jaegerpb.Span, error) {
 			is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
 
 			if is.Span.ParentID != nil {
-				// only add parent/child reference if the parent id can be parsed
-				if parentID, err := jaegerpb.SpanIDFromString(*is.Span.ParentID); err == nil {
-					span.References = append(span.References, jaegerpb.SpanRef{
-						TraceID: span.TraceID,
-						SpanID:  parentID,
-						RefType: jaegerpb.SpanRefType_CHILD_OF,
-					})
-				}
+				err = is.addParentChildSpanReferenceToJaegerSpan(span)
 			}
 
 			span.Logs = is.v2AnnotationsToJaegerLogs(is.Annotations)
@@ -486,8 +492,7 @@ func (sb *spanBuilder) pullOutSpecialBinaryAnnotations(is *InputSpan) (*trace.En
 		if ba.Value == nil || ba.Key == nil {
 			continue
 		}
-		switch val := (*ba.Value).(type) {
-		case bool:
+		if val, ok := (*ba.Value).(bool); ok {
 			if *ba.Key == "ca" {
 				ca = ba.Endpoint
 			} else if *ba.Key == "sa" {

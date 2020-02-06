@@ -46,6 +46,7 @@ func TestEscapeMetaCharacters(t *testing.T) {
 	}
 	Convey("should correctly handle special character ", t, func() {
 		for _, c := range cases {
+			c := c
 			Convey(c.desc, func() {
 				g := GetGlob(c.pattern)
 				for _, m := range c.match {

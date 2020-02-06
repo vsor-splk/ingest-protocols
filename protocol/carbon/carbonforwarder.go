@@ -158,7 +158,7 @@ func (f *Forwarder) AddDatapoints(ctx context.Context, points []*datapoint.Datap
 		}
 	}()
 
-	if err := f.setMinTime(ctx, openConnection); err != nil {
+	if err = f.setMinTime(ctx, openConnection); err != nil {
 		return err
 	}
 

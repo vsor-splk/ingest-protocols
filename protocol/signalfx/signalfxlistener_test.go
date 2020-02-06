@@ -147,10 +147,11 @@ func verifyEventRequest(baseURI string, contentType string, path string, body io
 				}
 				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
+				resp.Body.Close()
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 				Convey("and the generated event should be what we expect", func() {
 					runtime.Gosched()
-					_ = <-doneSignal
+					<-doneSignal
 					So(eventType, ShouldEqual, eOut.EventType)
 					So(category, ShouldEqual, eOut.Category)
 					if dimensions != nil {
@@ -293,6 +294,7 @@ func TestSignalfxListener(t *testing.T) {
 			So(err, ShouldBeNil)
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 		})
 		Convey("And a signalfx forwarder with a smart sampler config should not work", func() {
@@ -408,6 +410,7 @@ func TestSignalfxListener(t *testing.T) {
 			req.Header.Add("Content-Type", contentType)
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 		}
 		verifyStatusCode := func(body string, contentType string, pathSuffix string, expectedStatusCode int) {
@@ -417,6 +420,7 @@ func TestSignalfxListener(t *testing.T) {
 			req.Header.Add("Content-Type", contentType)
 			resp, err := client.Do(req)
 			So(err, ShouldBeNil)
+			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, expectedStatusCode)
 		}
 		Convey("given a json body without a timestamp or category", func() {
@@ -568,6 +572,7 @@ func TestSignalfxListener(t *testing.T) {
 				req.Header.Add("Content-Type", contentType)
 				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
+				resp.Body.Close()
 				So(resp.StatusCode, ShouldEqual, expectedStatusCode)
 			}
 			for _, v := range []struct {
@@ -582,6 +587,7 @@ func TestSignalfxListener(t *testing.T) {
 				{"just an object", "{}", "application/json", "/v1/trace", 400},
 				{"not thrift", "{}", "application/x-thrift", "/v1/trace", 400},
 			} {
+				v := v
 				Convey(v.desc, func() {
 					verifyStatusCode(v.body, v.content, v.path, v.expected)
 				})

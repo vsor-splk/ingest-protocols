@@ -119,7 +119,7 @@ func extractCollectdDimensions(doit bool, metricName string) (string, map[string
 	}
 }
 
-// i always wonder about passing strings around and if it's worth it to use thier address
+// i always wonder about passing strings around and if it's worth it to use their address
 // TODO write a benchmark to test performance and garbage generation here
 func stripQuotes(s string) string {
 	if s[0] == '"' {

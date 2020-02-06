@@ -12,32 +12,67 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/signalfx/golib/v3/datapoint/dpsink"
-
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
+	"github.com/jaegertracing/jaeger/model"
+	jThriftConverter "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	jThrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/opentracing/opentracing-go/ext"
+	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/log"
 	"github.com/signalfx/golib/v3/pointer"
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/golib/v3/web"
+	splunksapm "github.com/signalfx/sapm-proto/gen"
 )
 
-// JaegerThriftTraceDecoderV1 decodes Jaeger thrift spans to structs
-type JaegerThriftTraceDecoderV1 struct {
-	Logger          log.Logger
-	Sink            trace.Sink
+var (
+	// ErrInvalidJaegerTraceFormat is an error returned when the payload cannot be parsed into jaeger thrift
+	ErrInvalidJaegerTraceFormat = errors.New("invalid Jaeger format")
+	// ErrUnableToReadRequest is an error returned when the request payload can't be read
+	ErrUnableToReadRequest = errors.New("could not read request body")
+)
+
+const (
+	// JaegerV1 binary thrift protocol
+	JaegerV1 = "jaeger_thrift_v1"
+)
+
+// JaegerThriftDecoderBase is the base of other JaegerThriftDecoders.  It decodes an http request into jaeger thrift
+type JaegerThriftDecoderBase struct {
 	protocolFactory *thrift.TBinaryProtocolFactory
 	bufferPool      sync.Pool
 }
 
-// NewJaegerThriftTraceDecoderV1 creates a new decoder for Jaeger Thrift spans
-func NewJaegerThriftTraceDecoderV1(logger log.Logger, sink trace.Sink) *JaegerThriftTraceDecoderV1 {
-	return &JaegerThriftTraceDecoderV1{
-		Logger:          logger,
-		Sink:            sink,
+// Read reads an http request, decodes the jaeger thrift payload and returns it
+// Code inspired by
+// https://github.com/jaegertracing/jaeger/blob/89f3ccaef21d256728f02ec9d73b31f9c3bde71a/cmd/collector/app/http_handler.go#L61
+func (j *JaegerThriftDecoderBase) Read(ctx context.Context, req *http.Request) (*jThrift.Batch, error) {
+	buf := j.bufferPool.Get().(*bytes.Buffer)
+	defer j.bufferPool.Put(buf)
+	buf.Reset()
+
+	_, err := io.Copy(buf, req.Body)
+	if err != nil {
+		return nil, ErrUnableToReadRequest
+	}
+
+	protocol := j.protocolFactory.GetProtocol(&thrift.TMemoryBuffer{
+		Buffer: buf,
+	})
+
+	batch := &jThrift.Batch{}
+	if err := batch.Read(protocol); err != nil {
+		return nil, ErrInvalidJaegerTraceFormat
+	}
+
+	return batch, nil
+}
+
+// NewJaegerThriftDecoderBase returns a new JaegerThriftDecoderBase
+func NewJaegerThriftDecoderBase() *JaegerThriftDecoderBase {
+	return &JaegerThriftDecoderBase{
 		protocolFactory: thrift.NewTBinaryProtocolFactoryDefault(),
 		bufferPool: sync.Pool{
 			New: func() interface{} {
@@ -45,15 +80,50 @@ func NewJaegerThriftTraceDecoderV1(logger log.Logger, sink trace.Sink) *JaegerTh
 			},
 		},
 	}
-
 }
 
-var errInvalidJaegerTraceFormat = errors.New("invalid Jaeger format")
+// JaegerThriftToSAPMDecoder reads an jaeger thrift http.Request and parses it's body into a splunksapm.PostSpansRequest
+type JaegerThriftToSAPMDecoder struct {
+	*JaegerThriftDecoderBase
+}
 
-const (
-	// JaegerV1 binary thrift protocol
-	JaegerV1 = "jaeger_thrift_v1"
-)
+// Read reads an http request with a jaeger thrift payload and decodes it into SAPM
+func (j *JaegerThriftToSAPMDecoder) Read(ctx context.Context, req *http.Request) (*splunksapm.PostSpansRequest, error) {
+	batch, err := j.JaegerThriftDecoderBase.Read(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &splunksapm.PostSpansRequest{
+		Batches: []*model.Batch{
+			{
+				Spans:   jThriftConverter.ToDomain(batch.GetSpans(), batch.GetProcess()),
+				Process: jThriftConverter.ToDomainProcess(batch.GetProcess()),
+			},
+		},
+	}, nil
+}
+
+// NewJaegerThriftToSAPMDecoder returns a new JaegerThriftToSAPMDecoder
+func NewJaegerThriftToSAPMDecoder() *JaegerThriftToSAPMDecoder {
+	return &JaegerThriftToSAPMDecoder{NewJaegerThriftDecoderBase()}
+}
+
+// JaegerThriftTraceDecoderV1 decodes Jaeger thrift spans to structs
+type JaegerThriftTraceDecoderV1 struct {
+	*JaegerThriftDecoderBase
+	Logger log.Logger
+	Sink   trace.Sink
+}
+
+// NewJaegerThriftTraceDecoderV1 creates a new decoder for Jaeger Thrift spans
+func NewJaegerThriftTraceDecoderV1(logger log.Logger, sink trace.Sink) *JaegerThriftTraceDecoderV1 {
+	return &JaegerThriftTraceDecoderV1{
+		JaegerThriftDecoderBase: NewJaegerThriftDecoderBase(),
+		Logger:                  logger,
+		Sink:                    sink,
+	}
+}
 
 func setupThriftTraceV1(ctx context.Context, r *mux.Router, sink Sink, logger log.Logger, httpChain web.NextConstructor, counter *dpsink.Counter) sfxclient.Collector {
 	handler, st := SetupChain(ctx, sink, JaegerV1, func(s Sink) ErrorReader {
@@ -70,29 +140,18 @@ func SetupThriftByPaths(r *mux.Router, handler http.Handler, endpoint string) {
 	r.Path(endpoint).Methods("POST").Headers("Content-Type", "application/vnd.apache.thrift.binary").Handler(handler)
 }
 
+// Read reads an http request, decodes the jaeger thrift payload, and pushes the payload into the Sink
 // Code inspired by
 // https://github.com/jaegertracing/jaeger/blob/89f3ccaef21d256728f02ec9d73b31f9c3bde71a/cmd/collector/app/http_handler.go#L61
 func (decoder *JaegerThriftTraceDecoderV1) Read(ctx context.Context, req *http.Request) error {
-	buf := decoder.bufferPool.Get().(*bytes.Buffer)
-	defer decoder.bufferPool.Put(buf)
-	buf.Reset()
+	batch, err := decoder.JaegerThriftDecoderBase.Read(ctx, req)
 
-	_, err := io.Copy(buf, req.Body)
-	if err != nil {
-		return errors.New("could not read request body")
+	if err == nil {
+		spans := convertJaegerBatch(batch)
+		err = decoder.Sink.AddSpans(ctx, spans)
 	}
 
-	protocol := decoder.protocolFactory.GetProtocol(&thrift.TMemoryBuffer{
-		Buffer: buf,
-	})
-	batch := jThrift.Batch{}
-	if err := batch.Read(protocol); err != nil {
-		return errInvalidJaegerTraceFormat
-	}
-
-	spans := convertJaegerBatch(&batch)
-
-	return decoder.Sink.AddSpans(ctx, spans)
+	return err
 }
 
 func convertJaegerBatch(batch *jThrift.Batch) []*trace.Span {

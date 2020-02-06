@@ -14,6 +14,9 @@ type TestFilteredForwarder struct {
 }
 
 func Test(t *testing.T) {
+	var imNotAMatcher = "im.not.a.matcher"
+	var cpuIdleString = "cpu.idle"
+
 	Convey("bad regexes throw errors", t, func() {
 		filters := FilterObj{
 			Deny: []string{"["},
@@ -37,7 +40,7 @@ func Test(t *testing.T) {
 		So(err, ShouldBeNil)
 		dp := dptest.DP()
 		Convey("cpu.idle is allowed even though cpu.* is denied", func() {
-			dp.Metric = "cpu.idle"
+			dp.Metric = cpuIdleString
 			datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 			So(len(datapoints), ShouldEqual, 1)
 			So(forwarder.FilteredDatapoints, ShouldEqual, 0)
@@ -65,12 +68,12 @@ func Test(t *testing.T) {
 		So(err, ShouldBeNil)
 		dp := dptest.DP()
 		Convey("metrics starting with cpu get accepted", func() {
-			dp.Metric = "cpu.idle"
+			dp.Metric = cpuIdleString
 			datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 			So(len(datapoints), ShouldEqual, 1)
 			So(forwarder.FilteredDatapoints, ShouldEqual, 0)
 			Convey("metrics that don't match allow are denied", func() {
-				dp.Metric = "im.not.a.matcher"
+				dp.Metric = imNotAMatcher
 				datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 				So(len(datapoints), ShouldEqual, 0)
 				So(forwarder.FilteredDatapoints, ShouldEqual, 1)
@@ -86,12 +89,12 @@ func Test(t *testing.T) {
 		So(err, ShouldBeNil)
 		dp := dptest.DP()
 		Convey("metrics starting with cpu get denied", func() {
-			dp.Metric = "cpu.idle"
+			dp.Metric = cpuIdleString
 			datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 			So(len(datapoints), ShouldEqual, 0)
 			So(forwarder.FilteredDatapoints, ShouldEqual, 1)
 			Convey("metrics that don't match cpu are acccepted", func() {
-				dp.Metric = "im.not.a.matcher"
+				dp.Metric = imNotAMatcher
 				datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 				So(len(datapoints), ShouldEqual, 1)
 				So(forwarder.FilteredDatapoints, ShouldEqual, 1)
@@ -106,12 +109,12 @@ func Test(t *testing.T) {
 		So(err, ShouldBeNil)
 		dp := dptest.DP()
 		Convey("metrics starting with cpu get denied", func() {
-			dp.Metric = "cpu.idle"
+			dp.Metric = cpuIdleString
 			datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 			So(len(datapoints), ShouldEqual, 1)
 			So(forwarder.FilteredDatapoints, ShouldEqual, 0)
 			Convey("metrics that don't match cpu are acccepted", func() {
-				dp.Metric = "im.not.a.matcher"
+				dp.Metric = imNotAMatcher
 				datapoints := forwarder.FilterDatapoints([]*datapoint.Datapoint{dp})
 				So(len(datapoints), ShouldEqual, 1)
 				So(forwarder.FilteredDatapoints, ShouldEqual, 0)

@@ -17,7 +17,7 @@ export GO111MODULE = on
 
 # default is verification of sfxinternalgo which includes all services
 .PHONY: verify
-verify: install-tools test
+verify: install-tools lint test
 
 # Tools that package is dependent on
 .PHONY: install-tools

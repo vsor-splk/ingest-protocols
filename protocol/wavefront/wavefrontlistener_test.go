@@ -70,6 +70,7 @@ func TestFromWavefrontDatapoint(t *testing.T) {
 			expectedValue:      "566.005707",
 		},
 	} {
+		tt := tt
 		Convey(tt.desc, t, func() {
 			listener := &Listener{}
 			listener.extractCollectdDimensions = tt.doit

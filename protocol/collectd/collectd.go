@@ -105,7 +105,7 @@ func GetDimensionsFromName(val *string) (instanceName string, toAddDims map[stri
 				}
 				piece := dimensions[prev:cindex]
 				tindex := strings.Index(piece, "=")
-				if tindex == -1 || strings.Index(piece[tindex+1:], "=") > -1 {
+				if tindex == -1 || strings.Contains(piece[tindex+1:], "=") {
 					return
 				}
 				working[piece[:tindex]] = piece[tindex+1:]
@@ -119,7 +119,7 @@ func GetDimensionsFromName(val *string) (instanceName string, toAddDims map[stri
 			instanceName = left + rest
 		}
 	}
-	return
+	return instanceName, toAddDims
 }
 
 func parseNameForDimensions(dimensions map[string]string, key string, val *string) {
@@ -127,6 +127,7 @@ func parseNameForDimensions(dimensions map[string]string, key string, val *strin
 
 	for k, v := range toAddDims {
 		if _, exists := dimensions[k]; !exists {
+			v := v
 			addIfNotNullOrEmpty(dimensions, k, true, &v)
 		}
 	}
@@ -144,6 +145,7 @@ func pointTypeInstance(point *JSONWriteFormat, dimensions map[string]string, par
 		}
 		for k, v := range toAddDims {
 			if _, exists := dimensions[k]; !exists {
+				v := v
 				addIfNotNullOrEmpty(dimensions, k, true, &v)
 			}
 		}

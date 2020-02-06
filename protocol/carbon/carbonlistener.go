@@ -152,7 +152,8 @@ func (listener *Listener) handleTCPConnection(ctx context.Context, conn carbonLi
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			dp, err := NewCarbonDatapoint(line, listener.metricDeconstructor)
+			var dp *datapoint.Datapoint
+			dp, err = NewCarbonDatapoint(line, listener.metricDeconstructor)
 			if err != nil {
 				atomic.AddInt64(&listener.stats.invalidDatapoints, 1)
 				connLogger.Log(logkey.CarbonLine, line, log.Err, err, "Received data on a carbon port, but it doesn't look like carbon data")

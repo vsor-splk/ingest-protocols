@@ -11,9 +11,12 @@ import (
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/jaegertracing/jaeger/model"
 	jThrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/signalfx/golib/v3/pointer"
 	"github.com/signalfx/golib/v3/trace"
+	splunksapm "github.com/signalfx/sapm-proto/gen"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -240,6 +243,266 @@ const jaegerBatchJSON = `
 
 }
 `
+
+func TestJaegerThriftToSAPMDecoder(t *testing.T) {
+	// test data copied from https://github.com/jaegertracing/jaeger/blob/master/model/converter/thrift/jaeger/fixtures/thrift_batch_01.json
+	var jaegerThriftJSON = `
+{
+  "process": {
+    "serviceName": "api",
+    "tags": [
+      {
+        "key": "hostname",
+        "vType": "STRING",
+        "vStr": "api246-sjc1"
+      },
+      {
+        "key": "ip",
+        "vType": "STRING",
+        "vStr": "10.53.69.61"
+      },
+      {
+        "key": "jaeger.version",
+        "vType": "STRING",
+        "vStr": "Python-3.1.0"
+      }
+    ]
+  },
+  "spans": [
+    {
+      "traceIdLow": 5951113872249657919,
+      "spanId": 6585752,
+      "parentSpanId": 6866147,
+      "operationName": "get",
+      "startTime": 1485467191639875,
+      "duration": 22938,
+      "tags": [
+        {
+          "key": "http.url",
+          "vType": "STRING",
+          "vStr": "http://127.0.0.1:15598/client_transactions"
+        },
+        {
+          "key": "span.kind",
+          "vType": "STRING",
+          "vStr": "server"
+        },
+        {
+          "key": "peer.port",
+          "vType": "LONG",
+          "vLong": 53931
+        },
+        {
+          "key": "someBool",
+          "vType": "BOOL",
+          "vBool": true
+        },
+        {
+          "key": "someDouble",
+          "vType": "DOUBLE",
+          "vDouble": 129.8
+        },
+        {
+          "key": "peer.service",
+          "vType": "STRING",
+          "vStr": "rtapi"
+        },
+        {
+          "key": "peer.ipv4",
+          "vType": "LONG",
+          "vLong": 3224716605
+        }
+      ],
+      "logs": [
+        {
+          "timestamp": 1485467191639875,
+          "fields": [
+            {
+              "key": "key1",
+              "vType": "STRING",
+              "vStr": "value1"
+            },
+            {
+              "key": "key2",
+              "vType": "STRING",
+              "vStr": "value2"
+            }
+          ]
+        },
+        {
+          "timestamp": 1485467191639875,
+          "fields": [
+            {
+              "key": "event",
+              "vType": "STRING",
+              "vStr": "nothing"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+`
+	// modified from https://github.com/jaegertracing/jaeger/blob/master/model/converter/thrift/jaeger/fixtures/domain_01.json
+	var jagerProtoJSON = `
+{
+  "process": {
+	"serviceName": "api",
+	"tags": [
+	  {
+		"key": "hostname",
+		"vType": "STRING",
+		"vStr": "api246-sjc1"
+	  },
+	  {
+		"key": "ip",
+		"vType": "STRING",
+		"vStr": "10.53.69.61"
+	  },
+	  {
+		"key": "jaeger.version",
+		"vType": "STRING",
+		"vStr": "Python-3.1.0"
+	  }
+	]
+  },
+  "spans": [
+    {
+      "traceId": "AAAAAAAAAABSlpqJVVcaPw==",
+      "spanId": "AAAAAABkfZg=",
+      "operationName": "get",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceId": "AAAAAAAAAABSlpqJVVcaPw==",
+          "spanId": "AAAAAABoxOM="
+        }
+      ],
+      "startTime": "2017-01-26T16:46:31.639875-05:00",
+      "duration": "22938000ns",
+      "tags": [
+        {
+          "key": "http.url",
+          "vType": "STRING",
+          "vStr": "http://127.0.0.1:15598/client_transactions"
+        },
+        {
+          "key": "span.kind",
+          "vType": "STRING",
+          "vStr": "server"
+        },
+        {
+          "key": "peer.port",
+          "vType": "INT64",
+          "vInt64": 53931
+        },
+        {
+          "key": "someBool",
+          "vType": "BOOL",
+          "vBool": true
+        },
+        {
+          "key": "someDouble",
+          "vType": "FLOAT64",
+          "vFloat64": 129.8
+        },
+        {
+          "key": "peer.service",
+          "vType": "STRING",
+          "vStr": "rtapi"
+        },
+        {
+          "key": "peer.ipv4",
+          "vType": "INT64",
+          "vInt64": 3224716605
+        }
+      ],
+      "process": {
+        "serviceName": "api",
+        "tags": [
+          {
+            "key": "hostname",
+            "vType": "STRING",
+            "vStr": "api246-sjc1"
+          },
+          {
+            "key": "ip",
+            "vType": "STRING",
+            "vStr": "10.53.69.61"
+          },
+          {
+            "key": "jaeger.version",
+            "vType": "STRING",
+            "vStr": "Python-3.1.0"
+          }
+        ]
+      },
+      "logs": [
+        {
+          "timestamp": "2017-01-26T16:46:31.639875-05:00",
+          "fields": [
+            {
+              "key": "key1",
+              "vType": "STRING",
+              "vStr": "value1"
+            },
+            {
+              "key": "key2",
+              "vType": "STRING",
+              "vStr": "value2"
+            }
+          ]
+        },
+        {
+          "timestamp": "2017-01-26T16:46:31.639875-05:00",
+          "fields": [
+            {
+              "key": "event",
+              "vType": "STRING",
+              "vStr": "nothing"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+`
+	var batch jThrift.Batch
+	err := json.Unmarshal([]byte(jaegerThriftJSON), &batch)
+	batchBytes, err := thrift.NewTSerializer().Write(&batch)
+	if err != nil {
+		panic("couldn't serialize test batch to thrift")
+	}
+
+	reqBody := ioutil.NopCloser(bytes.NewBuffer(batchBytes))
+
+	var desired = &splunksapm.PostSpansRequest{Batches: []*model.Batch{{}}}
+	err = jsonpb.Unmarshal(strings.NewReader(jagerProtoJSON), desired.Batches[0])
+	if err != nil {
+		panic("couldn't serialize protobuf acceptance criteria")
+	}
+	decoder := NewJaegerThriftToSAPMDecoder()
+
+	Convey("Bad request body should error out", t, func() {
+		req := http.Request{
+			Body: ioutil.NopCloser(&errorReader{}),
+		}
+		_, err = decoder.Read(context.Background(), &req)
+
+		So(err.Error(), ShouldEqual, "could not read request body")
+	})
+
+	Convey("Spans should be decoded properly", t, func() {
+		req := http.Request{
+			Body: reqBody,
+		}
+		spans, err := decoder.Read(context.Background(), &req)
+		So(err, ShouldBeNil)
+		So(spans, ShouldResemble, desired)
+	})
+}
 
 func TestJaegerTraceDecoder(t *testing.T) {
 	var batch jThrift.Batch
