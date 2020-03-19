@@ -182,8 +182,8 @@ github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49/go.mod h1:muYA2clvwCdj7nzAJ5vJIXYpJsUumhAl4Uu1wUNpWzA=
 github.com/signalfx/embetcd v0.0.9 h1:JMAvW8ZNHstcg8DONl8H/0twi8l58jxSYsvEamzDgo8=
 github.com/signalfx/embetcd v0.0.9/go.mod h1:nnHA0iw9pDCZs/q4/rzYPLdkbsL7Aes9wZ/P5zQ2P18=
-github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15 h1:fpg8nIesNCgMnw44flP5fljNCkYfpGxbtzREMlLDI08=
-github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15/go.mod h1:Zx1eNCg/RuM9/sBhW4qej5BN7uwxAYziXHvC7nTOcFg=
+github.com/signalfx/gohelpers v0.0.0-20200319205814-a00d270ff0d6 h1:qA5/0dDZpJ4MUE/P4GD4OpiGSC8tyjnGTg95tLLdS+I=
+github.com/signalfx/gohelpers v0.0.0-20200319205814-a00d270ff0d6/go.mod h1:Zx1eNCg/RuM9/sBhW4qej5BN7uwxAYziXHvC7nTOcFg=
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 h1:WsShHmu12ZztYPfh9b+I+VjYD1o8iOHhB67WZCMEEE8=
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083/go.mod h1:adPDS6s7WaajdFBV9mQ7i0dKfQ8xiDnF9ZNETVPpp7c=
 github.com/signalfx/golib v2.3.1+incompatible h1:cupW1Ug2X14sXjZXx/qoD8tMlRzKVIA1XDKJSl48H8o=
