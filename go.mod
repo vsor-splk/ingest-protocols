@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
 	github.com/signalfx/embetcd v0.0.9
-	github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15
+	github.com/signalfx/gohelpers v0.0.0-20200319205814-a00d270ff0d6
 	github.com/signalfx/golib/v3 v3.2.1
 	github.com/signalfx/sapm-proto v0.4.0
 	github.com/signalfx/xdgbasedir v0.0.0-20160106035722-cd6a71c07e4e
