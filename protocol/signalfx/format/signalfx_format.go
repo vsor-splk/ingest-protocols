@@ -98,3 +98,19 @@ type InputSpan struct {
 // InputSpanList is an array of InputSpan pointers
 //easyjson:json
 type InputSpanList []*InputSpan
+
+// JSONLogHECV1 decodes enterprise HEC format, details: https://docs.splunk.com/Documentation/SplunkCloud/latest/Data/FormateventsforHTTPEventCollector#Event_metadata
+//easyjson:json
+type JSONLogHECV1 struct {
+	Time       *int64                 `json:"time,omitempty"`
+	Host       string                 `json:"host,omitempty"`
+	Source     string                 `json:"source,omitempty"`
+	SourceType string                 `json:"sourcetype,omitempty"`
+	Fields     map[string]interface{} `json:"fields,omitempty"`
+	Index      string                 `json:"index,omitempty"`
+	Event      []interface{}          `json:"event"`
+}
+
+// JSONLogHECV1List is an array of JSONLogHECV1 pointers
+//easyjson:json
+type JSONLogHECV1List []*JSONLogHECV1
