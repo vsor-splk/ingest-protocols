@@ -22,27 +22,6 @@ import (
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 )
 
-const (
-	// DefaultTracePathV1 is the default listen path
-	DefaultTracePathV1 = "/v1/trace"
-	// ZipkinTracePathV1 adds /api/v1/spans endpoint
-	ZipkinTracePathV1 = "/api/v1/spans"
-	// ZipkinTracePathV2 adds /api/vw/spans endpoint
-	ZipkinTracePathV2 = "/api/v2/spans"
-	// ZipkinV1 is a constant used for protocol naming
-	ZipkinV1 = "zipkin_json_v1"
-)
-
-// Constants as variables so it is easy to get a pointer to them
-var (
-	trueVar = true
-
-	ClientKind   = "CLIENT"
-	ServerKind   = "SERVER"
-	ProducerKind = "PRODUCER"
-	ConsumerKind = "CONSUMER"
-)
-
 // InputSpan is an alias
 type InputSpan signalfxformat.InputSpan
 

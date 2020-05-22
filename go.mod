@@ -16,8 +16,6 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/jaegertracing/jaeger v1.16.0
-	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
-	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
 	github.com/mailru/easyjson v0.7.0
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
@@ -25,8 +23,8 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
 	github.com/signalfx/embetcd v0.0.9
-	github.com/signalfx/gohelpers v0.0.0-20200319205814-a00d270ff0d6
-	github.com/signalfx/golib/v3 v3.2.1
+	github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15
+	github.com/signalfx/golib/v3 v3.3.3-0.20200520231437-a011aac734a8
 	github.com/signalfx/sapm-proto v0.4.0
 	github.com/signalfx/xdgbasedir v0.0.0-20160106035722-cd6a71c07e4e
 	github.com/smartystreets/assertions v1.0.1
@@ -37,6 +35,6 @@ require (
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
 	github.com/uber/tchannel-go v1.16.0 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
