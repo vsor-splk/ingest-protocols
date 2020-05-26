@@ -108,7 +108,7 @@ type JSONLogHECV1 struct {
 	SourceType string                 `json:"sourcetype,omitempty"`
 	Fields     map[string]interface{} `json:"fields,omitempty"`
 	Index      string                 `json:"index,omitempty"`
-	Event      []interface{}          `json:"event"`
+	Event      interface{}            `json:"event"`
 }
 
 // JSONLogHECV1List is an array of JSONLogHECV1 pointers

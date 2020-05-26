@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -25,18 +24,6 @@ import (
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/golib/v3/web"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
-)
-
-var (
-	// ErrInvalidJaegerTraceFormat is an error returned when the payload cannot be parsed into jaeger thrift
-	ErrInvalidJaegerTraceFormat = errors.New("invalid Jaeger format")
-	// ErrUnableToReadRequest is an error returned when the request payload can't be read
-	ErrUnableToReadRequest = errors.New("could not read request body")
-)
-
-const (
-	// JaegerV1 binary thrift protocol
-	JaegerV1 = "jaeger_thrift_v1"
 )
 
 // JaegerThriftDecoderBase is the base of other JaegerThriftDecoders.  It decodes an http request into jaeger thrift
@@ -344,25 +331,6 @@ func materializeWithJSON(logFields []*jThrift.Tag) ([]byte, error) {
 		return []byte(event), nil
 	}
 	return json.Marshal(fields)
-}
-
-var pads = []string{
-	"",
-	"0",
-	"00",
-	"000",
-	"0000",
-	"00000",
-	"000000",
-	"0000000",
-	"00000000",
-	"000000000",
-	"0000000000",
-	"00000000000",
-	"000000000000",
-	"0000000000000",
-	"00000000000000",
-	"000000000000000",
 }
 
 // The way IDs get converted to strings in some of the jaeger code, leading 0s

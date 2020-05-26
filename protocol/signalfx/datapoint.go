@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -136,12 +135,6 @@ type ProtobufDecoderV2 struct {
 	Logger log.Logger
 }
 
-var buffs = sync.Pool{
-	New: func() interface{} {
-		return new(bytes.Buffer)
-	},
-}
-
 func (decoder *ProtobufDecoderV2) Read(ctx context.Context, req *http.Request) (err error) {
 	jeff := buffs.Get().(*bytes.Buffer)
 	defer buffs.Put(jeff)
@@ -172,8 +165,6 @@ type JSONDecoderV2 struct {
 	unknownMetricType int64
 	invalidValue      int64
 }
-
-var errInvalidJSONFormat = errors.New("invalid JSON format; please see correct format at https://developers.signalfx.com/ingest_data_reference.html")
 
 // Datapoints returns datapoints for json decoder v2
 func (decoder *JSONDecoderV2) Datapoints() []*datapoint.Datapoint {
