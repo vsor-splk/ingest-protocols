@@ -48,9 +48,12 @@ func (is *InputSpan) v2AnnotationsToJaegerLogs(annotations []*signalfxformat.Inp
 		var err error
 		l.Fields, err = translator.FieldsFromJSONString(*ann.Value)
 		if err != nil {
-			// We are choosing to drop the log line and not the span under the philosophy that
-			// for users it is better to miss a  tag or logline instead of missing the entire operation.
-			continue
+			// Do our best
+			l.Fields = []jaegerpb.KeyValue{{
+				Key:   "annotation",
+				VType: jaegerpb.ValueType_STRING,
+				VStr:  *ann.Value,
+			}}
 		}
 		logs = append(logs, l)
 	}
