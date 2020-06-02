@@ -1703,6 +1703,16 @@ func TestParseSAPMFromRequest(t *testing.T) {
 									},
 								},
 							},
+							{
+								Timestamp: time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+								Fields: []jaegerpb.KeyValue{
+									{
+										Key:   "annotation",
+										VType: jaegerpb.ValueType_STRING,
+										VStr:  "nothing",
+									},
+								},
+							},
 						},
 						Warnings: nil,
 					},
