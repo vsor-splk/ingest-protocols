@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package sfx_log_format;
+
+option go_package = ".;model";
+
+// LogRequest represents the data that is incoming which is a list of ResourceLogs
+message LogRequest {
+    repeated ResourceLogs resourceLogs = 1;
+}
+
+// ResourceLogs handles either sharing a resource with list of LogRecord or unique for each logRecord
+message ResourceLogs {
+    Resource resource = 1;
+    repeated LogRecord logRecords = 2;
+}
+
+// model is based off https://github.com/open-telemetry/oteps/blob/master/text/0097-log-data-model.md#log-and-event-record-definition
+message LogRecord {
+    fixed64 Timestamp = 1;
+    bytes TraceID = 2;
+    bytes SpanID = 3;
+    fixed32 TraceFlags = 4;
+    string SeverityText = 5;
+    fixed32 SeverityNumber = 6;
+    string Name = 7;
+    Value Body = 8;
+    KeyValueList Attributes = 9;
+}
+
+// AnyValue is used to store Body attribute different types of values
+// @TODO: benchmark protobuf auto-gen with gogo/protobuf
+message Value {
+    oneof value {
+        string string_value = 1;
+        bool bool_value = 2;
+        int64 int_value = 3;
+        double double_value = 4;
+        ValueList array_value = 5;
+        KeyValueList kvlist_value = 6;
+    }
+}
+
+// KeyAnyValue is a wrapper for map key's and its corresponding any value used for Attributes
+message KeyValue {
+    string key = 1;
+    Value value = 2;
+}
+
+enum LogRecordFlags {
+    UNDEFINED = 0;
+    TRACE_FLAG_MASK = 0x000000FF;
+}
+
+// Resource consists of a list of {key, value} pairs
+message Resource {
+    repeated KeyValue values = 1;
+}
+
+// Value list is a list of any values
+message ValueList {
+    repeated Value values = 1;
+}
+
+// KeyValueMap is a list of {key, any value}
+message KeyValueList {
+    repeated KeyValue values = 1;
+}
