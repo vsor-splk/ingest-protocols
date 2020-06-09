@@ -11,7 +11,7 @@ require (
 	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/mux v1.7.3
@@ -36,5 +36,6 @@ require (
 	github.com/uber/tchannel-go v1.16.0 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
+	google.golang.org/protobuf v1.23.0
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )

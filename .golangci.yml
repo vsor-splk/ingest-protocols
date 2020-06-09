@@ -14,6 +14,7 @@ run:
   skip-files:
     - ".*\\.pb\\.go"
     - ".*\\.gen\\.go"
+    - ".*\\.java"
   # by default isn't set. If set we pass it to "go list -mod={option}". From "go help modules":
   # If invoked with -mod=readonly, the go command is disallowed from the implicit
   # automatic updating of go.mod described above. Instead, it fails when any changes
