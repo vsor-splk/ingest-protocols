@@ -1,20 +1,15 @@
 package signalfx
 
 import (
-	"testing"
-
-	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
-
 	"errors"
 	"math"
+	"testing"
 
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
-	"github.com/signalfx/gohelpers/workarounds"
-
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/pointer"
-
+	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -55,18 +50,18 @@ func TestValueToValue(t *testing.T) {
 
 func TestNewProtobufDataPointWithType(t *testing.T) {
 	Convey("A nil datapoint value", t, func() {
-		dp := com_signalfx_metrics_protobuf.DataPoint{}
+		dp := sfxmodel.DataPoint{}
 		Convey("should error when converted", func() {
-			_, err := NewProtobufDataPointWithType(&dp, com_signalfx_metrics_protobuf.MetricType_COUNTER)
+			_, err := NewProtobufDataPointWithType(&dp, sfxmodel.MetricType_COUNTER)
 			So(err, ShouldEqual, errDatapointValueNotSet)
 		})
 		Convey("with a value", func() {
-			dp.Value = &com_signalfx_metrics_protobuf.Datum{
+			dp.Value = sfxmodel.Datum{
 				IntValue: pointer.Int64(1),
 			}
 			Convey("source should set", func() {
-				dp.Source = pointer.String("hello")
-				dp2, err := NewProtobufDataPointWithType(&dp, com_signalfx_metrics_protobuf.MetricType_COUNTER)
+				dp.Source = "hello"
+				dp2, err := NewProtobufDataPointWithType(&dp, sfxmodel.MetricType_COUNTER)
 				So(err, ShouldBeNil)
 				So(dp2.Dimensions["sf_source"], ShouldEqual, "hello")
 			})
@@ -77,7 +72,7 @@ func TestNewProtobufDataPointWithType(t *testing.T) {
 func TestPropertyAsRawType(t *testing.T) {
 	Convey("With value raw test PropertyAsRawType", t, func() {
 		type testCase struct {
-			v   *com_signalfx_metrics_protobuf.PropertyValue
+			v   *sfxmodel.PropertyValue
 			exp interface{}
 		}
 		cases := []testCase{
@@ -86,31 +81,31 @@ func TestPropertyAsRawType(t *testing.T) {
 				exp: nil,
 			},
 			{
-				v: &com_signalfx_metrics_protobuf.PropertyValue{
+				v: &sfxmodel.PropertyValue{
 					BoolValue: proto.Bool(false),
 				},
 				exp: false,
 			},
 			{
-				v: &com_signalfx_metrics_protobuf.PropertyValue{
+				v: &sfxmodel.PropertyValue{
 					IntValue: proto.Int64(123),
 				},
 				exp: 123,
 			},
 			{
-				v: &com_signalfx_metrics_protobuf.PropertyValue{
+				v: &sfxmodel.PropertyValue{
 					DoubleValue: proto.Float64(2.0),
 				},
 				exp: 2.0,
 			},
 			{
-				v: &com_signalfx_metrics_protobuf.PropertyValue{
+				v: &sfxmodel.PropertyValue{
 					StrValue: proto.String("hello"),
 				},
 				exp: "hello",
 			},
 			{
-				v:   &com_signalfx_metrics_protobuf.PropertyValue{},
+				v:   &sfxmodel.PropertyValue{},
 				exp: nil,
 			},
 		}
@@ -131,13 +126,13 @@ func TestBodySendFormatV2(t *testing.T) {
 
 func TestNewProtobufEvent(t *testing.T) {
 	Convey("given a protobuf event with a nil property value", t, func() {
-		protoEvent := &com_signalfx_metrics_protobuf.Event{
-			EventType:  workarounds.GolangDoesnotAllowPointerToStringLiteral("mwp.test2"),
-			Dimensions: []*com_signalfx_metrics_protobuf.Dimension{},
-			Properties: []*com_signalfx_metrics_protobuf.Property{
+		protoEvent := &sfxmodel.Event{
+			EventType:  "mwp.test2",
+			Dimensions: []*sfxmodel.Dimension{},
+			Properties: []*sfxmodel.Property{
 				{
-					Key:   workarounds.GolangDoesnotAllowPointerToStringLiteral("version"),
-					Value: &com_signalfx_metrics_protobuf.PropertyValue{},
+					Key:   "version",
+					Value: &sfxmodel.PropertyValue{},
 				},
 			},
 		}
@@ -152,7 +147,7 @@ func TestNewProtobufEvent(t *testing.T) {
 func TestFromMT(t *testing.T) {
 	Convey("invalid fromMT types should panic", t, func() {
 		So(func() {
-			fromMT(com_signalfx_metrics_protobuf.MetricType(1001))
+			fromMT(sfxmodel.MetricType(1001))
 		}, ShouldPanic)
 	})
 }
@@ -161,15 +156,15 @@ func TestNewDatumValue(t *testing.T) {
 	Convey("datum values should convert", t, func() {
 		Convey("string should convert", func() {
 			s1 := "abc"
-			So(s1, ShouldEqual, NewDatumValue(&com_signalfx_metrics_protobuf.Datum{StrValue: &s1}).(datapoint.StringValue).String())
+			So(s1, ShouldEqual, NewDatumValue(sfxmodel.Datum{StrValue: &s1}).(datapoint.StringValue).String())
 		})
 		Convey("floats should convert", func() {
 			f1 := 1.2
-			So(f1, ShouldEqual, NewDatumValue(&com_signalfx_metrics_protobuf.Datum{DoubleValue: &f1}).(datapoint.FloatValue).Float())
+			So(f1, ShouldEqual, NewDatumValue(sfxmodel.Datum{DoubleValue: &f1}).(datapoint.FloatValue).Float())
 		})
 		Convey("int should convert", func() {
 			i1 := int64(3)
-			So(i1, ShouldEqual, NewDatumValue(&com_signalfx_metrics_protobuf.Datum{IntValue: &i1}).(datapoint.IntValue).Int())
+			So(i1, ShouldEqual, NewDatumValue(sfxmodel.Datum{IntValue: &i1}).(datapoint.IntValue).Int())
 		})
 	})
 }

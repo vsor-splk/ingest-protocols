@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mailru/easyjson"
+
 	jaegerpb "github.com/jaegertracing/jaeger/model"
 	"github.com/signalfx/golib/v3/pointer"
 	"github.com/signalfx/golib/v3/trace"
@@ -2385,4 +2387,52 @@ func BenchmarkParseMapOfJaegerBatchesFromRequest(b *testing.B) {
 	// This is to prevent a compiler optimization during the benchmark.
 	// See https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go
 	benchmarkResults = batches
+}
+
+func Test(t *testing.T) {
+	var sourceSpans = []*InputSpan{
+		{
+			Span: trace.Span{
+				TraceID:  "a2969a8955571a3f",
+				ParentID: pointer.String("000000000068c4e3"),
+				ID:       "0000000000147d98",
+				Name:     pointer.String("get"),
+				Kind:     &ServerKind,
+				LocalEndpoint: &trace.Endpoint{
+					ServiceName: pointer.String("api1"),
+					Ipv4:        pointer.String("10.53.69.61"),
+				},
+				RemoteEndpoint: &trace.Endpoint{
+					ServiceName: pointer.String("rtapi"),
+					Ipv4:        pointer.String("192.53.69.61"),
+					Port:        pointer.Int32(53931),
+				},
+				Debug:  nil,
+				Shared: nil,
+				Tags: map[string]string{
+					"http.url":       "http://127.0.0.1:15598/client_transactions",
+					"someBool":       "true",
+					"someFalseBool":  "false",
+					"someDouble":     "129.8",
+					"hostname":       "api246-sjc1",
+					"jaeger.version": "Python-3.1.0",
+				},
+			},
+			Timestamp: pointer.Float64(1485467191639875),
+			Duration:  pointer.Float64(22938),
+			Annotations: []*signalfxformat.InputAnnotation{
+				{Timestamp: pointer.Float64(1485467191639875), Value: pointer.String("{\"key1\":\"value1\",\"key2\":\"value2\"}")},
+				{Timestamp: pointer.Float64(1485467191639875), Value: pointer.String("nothing")},
+			},
+			BinaryAnnotations: []*signalfxformat.BinaryAnnotation{
+				{Key: pointer.String("bool"), Value: interfaceAddr(true), Endpoint: &trace.Endpoint{
+					ServiceName: pointer.String("frontend"),
+					Ipv4:        pointer.String("127.0.0.1"),
+				}},
+			},
+		},
+	}
+	bb, _ := easyjson.Marshal((*signalfxformat.InputSpan)(sourceSpans[0]))
+	fmt.Println(string(bb))
+
 }

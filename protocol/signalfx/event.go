@@ -5,18 +5,17 @@ import (
 	"context"
 	"net/http"
 
-	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
-
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/mailru/easyjson"
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/event"
 	"github.com/signalfx/golib/v3/log"
 	"github.com/signalfx/golib/v3/pointer"
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/web"
+	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 )
 
 // ProtobufEventDecoderV2 decodes protocol buffers in signalfx's v2 format and sends them to Sink
@@ -32,7 +31,7 @@ func (decoder *ProtobufEventDecoderV2) Read(ctx context.Context, req *http.Reque
 	if err = readFromRequest(jeff, req, decoder.Logger); err != nil {
 		return err
 	}
-	var msg com_signalfx_metrics_protobuf.EventUploadMessage
+	var msg sfxmodel.EventUploadMessage
 	if err = proto.Unmarshal(jeff.Bytes(), &msg); err != nil {
 		return err
 	}
@@ -68,7 +67,7 @@ func (decoder *JSONEventDecoderV2) Read(ctx context.Context, req *http.Request) 
 			jsonEvent.Timestamp = pointer.Int64(0)
 		}
 		cat := event.USERDEFINED
-		if pbcat, ok := com_signalfx_metrics_protobuf.EventCategory_value[*jsonEvent.Category]; ok {
+		if pbcat, ok := sfxmodel.EventCategory_value[*jsonEvent.Category]; ok {
 			cat = event.Category(pbcat)
 		}
 		evt := event.NewWithProperties(jsonEvent.EventType, cat, jsonEvent.Dimensions, jsonEvent.Properties, fromTs(*jsonEvent.Timestamp))
