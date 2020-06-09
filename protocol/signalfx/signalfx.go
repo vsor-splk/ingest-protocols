@@ -7,7 +7,7 @@ import (
 
 	"errors"
 
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/event"
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
@@ -17,7 +17,7 @@ import (
 type ValueToSend signalfxformat.ValueToSend
 
 // NewDatumValue creates new datapoint value referenced from a value of the datum protobuf
-func NewDatumValue(val *com_signalfx_metrics_protobuf.Datum) datapoint.Value {
+func NewDatumValue(val sfxmodel.Datum) datapoint.Value {
 	if val.DoubleValue != nil {
 		return datapoint.NewFloatValue(val.GetDoubleValue())
 	}
@@ -64,13 +64,13 @@ type MetricCreationResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
-var fromMTMap = map[com_signalfx_metrics_protobuf.MetricType]datapoint.MetricType{
-	com_signalfx_metrics_protobuf.MetricType_CUMULATIVE_COUNTER: datapoint.Counter,
-	com_signalfx_metrics_protobuf.MetricType_GAUGE:              datapoint.Gauge,
-	com_signalfx_metrics_protobuf.MetricType_COUNTER:            datapoint.Count,
+var fromMTMap = map[sfxmodel.MetricType]datapoint.MetricType{
+	sfxmodel.MetricType_CUMULATIVE_COUNTER: datapoint.Counter,
+	sfxmodel.MetricType_GAUGE:              datapoint.Gauge,
+	sfxmodel.MetricType_COUNTER:            datapoint.Count,
 }
 
-func fromMT(mt com_signalfx_metrics_protobuf.MetricType) datapoint.MetricType {
+func fromMT(mt sfxmodel.MetricType) datapoint.MetricType {
 	ret, exists := fromMTMap[mt]
 	if exists {
 		return ret
@@ -88,10 +88,11 @@ func fromTs(ts int64) time.Time {
 var errDatapointValueNotSet = errors.New("datapoint value not set")
 
 // NewProtobufDataPointWithType creates a new datapoint from SignalFx's protobuf definition (backwards compatable with old API)
-func NewProtobufDataPointWithType(dp *com_signalfx_metrics_protobuf.DataPoint, mType com_signalfx_metrics_protobuf.MetricType) (*datapoint.Datapoint, error) {
-	var mt com_signalfx_metrics_protobuf.MetricType
+func NewProtobufDataPointWithType(dp *sfxmodel.DataPoint, mType sfxmodel.MetricType) (*datapoint.Datapoint, error) {
+	var mt sfxmodel.MetricType
 
-	if dp.GetValue() == nil {
+	// TODO make this a method?
+	if dp.GetValue().StrValue == nil && dp.GetValue().IntValue == nil && dp.GetValue().DoubleValue == nil {
 		return nil, errDatapointValueNotSet
 	}
 	if dp.MetricType != nil {
@@ -115,7 +116,7 @@ func NewProtobufDataPointWithType(dp *com_signalfx_metrics_protobuf.DataPoint, m
 }
 
 // PropertyAsRawType converts a protobuf property to a native Go type
-func PropertyAsRawType(p *com_signalfx_metrics_protobuf.PropertyValue) interface{} {
+func PropertyAsRawType(p *sfxmodel.PropertyValue) interface{} {
 	if p == nil {
 		return nil
 	}
@@ -137,7 +138,7 @@ func PropertyAsRawType(p *com_signalfx_metrics_protobuf.PropertyValue) interface
 var errPropertyValueNotSet = errors.New("property value not set")
 
 // NewProtobufEvent creates a new event from SignalFx's protobuf definition
-func NewProtobufEvent(e *com_signalfx_metrics_protobuf.Event) (*event.Event, error) {
+func NewProtobufEvent(e *sfxmodel.Event) (*event.Event, error) {
 	dims := make(map[string]string, len(e.GetDimensions())+1)
 	edims := e.GetDimensions()
 	for _, dpdim := range edims {

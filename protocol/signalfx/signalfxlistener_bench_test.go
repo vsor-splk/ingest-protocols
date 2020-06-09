@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/event"
 	"github.com/signalfx/golib/v3/log"
@@ -56,18 +56,18 @@ func (f *fastSink) AddLogs(ctx context.Context, logs []*logsink.Log) error {
 }
 
 func BenchmarkProtobufDecoderV2_Read(b *testing.B) {
-	dp := &com_signalfx_metrics_protobuf.DataPoint{
-		Metric: pointer.String("metric"),
-		Value: &com_signalfx_metrics_protobuf.Datum{
+	dp := &sfxmodel.DataPoint{
+		Metric: "metric",
+		Value: sfxmodel.Datum{
 			IntValue: pointer.Int64(3),
 		},
-		Dimensions: []*com_signalfx_metrics_protobuf.Dimension{
-			{Key: pointer.String("this"), Value: pointer.String("that")},
-			{Key: pointer.String("here"), Value: pointer.String("there")},
+		Dimensions: []*sfxmodel.Dimension{
+			{Key: "this", Value: "that"},
+			{Key: "here", Value: "there"},
 		},
 	}
-	dps := &com_signalfx_metrics_protobuf.DataPointUploadMessage{
-		Datapoints: []*com_signalfx_metrics_protobuf.DataPoint{
+	dps := &sfxmodel.DataPointUploadMessage{
+		Datapoints: []*sfxmodel.DataPoint{
 			dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp, dp,
 		},
 	}
@@ -160,7 +160,7 @@ func BenchmarkJSONDecoderV1_Read(b *testing.B) {
 		Sink:   s,
 		Logger: log.DefaultLogger,
 		TypeGetter: &metricHandler{
-			metricCreationsMap: make(map[string]com_signalfx_metrics_protobuf.MetricType),
+			metricCreationsMap: make(map[string]sfxmodel.MetricType),
 		},
 	}
 	ctx := context.Background()

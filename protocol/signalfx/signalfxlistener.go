@@ -11,7 +11,7 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/errors"
@@ -71,7 +71,7 @@ func (streamer *ListenerServer) Datapoints() []*datapoint.Datapoint {
 
 // MericTypeGetter is an old metric interface that returns the type of a metric name
 type MericTypeGetter interface {
-	GetMetricTypeFromMap(metricName string) com_signalfx_metrics_protobuf.MetricType
+	GetMetricTypeFromMap(metricName string) sfxmodel.MetricType
 }
 
 // ErrorReader are datapoint streamers that read from a HTTP request and return errors if
@@ -151,7 +151,7 @@ var defaultListenerConfig = &ListenerConfig{
 
 type metricHandler struct {
 	metricCreationsMapMutex sync.Mutex
-	metricCreationsMap      map[string]com_signalfx_metrics_protobuf.MetricType
+	metricCreationsMap      map[string]sfxmodel.MetricType
 	jsonMarshal             func(v interface{}) ([]byte, error)
 	logger                  log.Logger
 }
@@ -170,14 +170,14 @@ func (handler *metricHandler) ServeHTTP(writter http.ResponseWriter, req *http.R
 	defer handler.metricCreationsMapMutex.Unlock()
 	ret := []MetricCreationResponse{}
 	for _, m := range d {
-		metricType, ok := com_signalfx_metrics_protobuf.MetricType_value[m.MetricType]
+		metricType, ok := sfxmodel.MetricType_value[m.MetricType]
 		if !ok {
 			writter.WriteHeader(http.StatusBadRequest)
 			_, err := writter.Write([]byte(`{msg:"Invalid metric type"}`))
 			log.IfErr(handler.logger, err)
 			return
 		}
-		handler.metricCreationsMap[m.MetricName] = com_signalfx_metrics_protobuf.MetricType(metricType)
+		handler.metricCreationsMap[m.MetricName] = sfxmodel.MetricType(metricType)
 		ret = append(ret, MetricCreationResponse{Code: 409})
 	}
 	toWrite, err := handler.jsonMarshal(ret)
@@ -193,12 +193,12 @@ func (handler *metricHandler) ServeHTTP(writter http.ResponseWriter, req *http.R
 	log.IfErr(handler.logger, err)
 }
 
-func (handler *metricHandler) GetMetricTypeFromMap(metricName string) com_signalfx_metrics_protobuf.MetricType {
+func (handler *metricHandler) GetMetricTypeFromMap(metricName string) sfxmodel.MetricType {
 	handler.metricCreationsMapMutex.Lock()
 	defer handler.metricCreationsMapMutex.Unlock()
 	mt, ok := handler.metricCreationsMap[metricName]
 	if !ok {
-		return com_signalfx_metrics_protobuf.MetricType_GAUGE
+		return sfxmodel.MetricType_GAUGE
 	}
 	return mt
 }
@@ -222,7 +222,7 @@ func NewListener(sink Sink, conf *ListenerConfig) (*ListenerServer, error) {
 		listener: listener,
 		logger:   conf.Logger,
 		metricHandler: metricHandler{
-			metricCreationsMap: make(map[string]com_signalfx_metrics_protobuf.MetricType),
+			metricCreationsMap: make(map[string]sfxmodel.MetricType),
 			logger:             log.NewContext(conf.Logger).With(logkey.Struct, "metricHandler"),
 			jsonMarshal:        conf.JSONMarshal,
 		},

@@ -14,12 +14,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
-
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/mailru/easyjson"
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/errors"
@@ -27,6 +25,7 @@ import (
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/web"
 	"github.com/signalfx/ingest-protocols/logkey"
+	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 )
 
 // JSONDatapointV1 is an alias
@@ -83,7 +82,7 @@ func (decoder *ProtobufDecoderV1) Read(ctx context.Context, req *http.Request) e
 		if err != nil {
 			return fmt.Errorf("unable to fully read protobuf message: %s", err)
 		}
-		var msg com_signalfx_metrics_protobuf.DataPoint
+		var msg sfxmodel.DataPoint
 		err = proto.Unmarshal(buf, &msg)
 		if err != nil {
 			return err
@@ -98,8 +97,8 @@ func (decoder *ProtobufDecoderV1) Read(ctx context.Context, req *http.Request) e
 	}
 }
 
-func datapointProtobufIsInvalidForV1(msg *com_signalfx_metrics_protobuf.DataPoint) bool {
-	return msg.Metric == nil || msg.Value == nil
+func datapointProtobufIsInvalidForV1(msg *sfxmodel.DataPoint) bool {
+	return msg.Metric == "" || (msg.Value.DoubleValue == nil && msg.Value.IntValue == nil && msg.Value.StrValue == nil)
 }
 
 // JSONDecoderV1 creates datapoints out of the v1 JSON definition
@@ -142,13 +141,13 @@ func (decoder *ProtobufDecoderV2) Read(ctx context.Context, req *http.Request) (
 	if err = readFromRequest(jeff, req, decoder.Logger); err != nil {
 		return err
 	}
-	var msg com_signalfx_metrics_protobuf.DataPointUploadMessage
+	var msg sfxmodel.DataPointUploadMessage
 	if err = proto.Unmarshal(jeff.Bytes(), &msg); err != nil {
 		return err
 	}
 	dps := make([]*datapoint.Datapoint, 0, len(msg.GetDatapoints()))
 	for _, protoDb := range msg.GetDatapoints() {
-		if dp, err1 := NewProtobufDataPointWithType(protoDb, com_signalfx_metrics_protobuf.MetricType_GAUGE); err1 == nil {
+		if dp, err1 := NewProtobufDataPointWithType(protoDb, sfxmodel.MetricType_GAUGE); err1 == nil {
 			dps = append(dps, dp)
 		}
 	}
@@ -182,7 +181,7 @@ func (decoder *JSONDecoderV2) Read(ctx context.Context, req *http.Request) error
 	dps := make([]*datapoint.Datapoint, 0, len(d))
 	for metricType, datapoints := range d {
 		if len(datapoints) > 0 {
-			mt, ok := com_signalfx_metrics_protobuf.MetricType_value[strings.ToUpper(metricType)]
+			mt, ok := sfxmodel.MetricType_value[strings.ToUpper(metricType)]
 			if !ok {
 				message := make([]interface{}, 0, 7)
 				message = append(message, logkey.MetricType, metricType, logkey.Struct, datapoints[0])
@@ -203,7 +202,7 @@ func (decoder *JSONDecoderV2) Read(ctx context.Context, req *http.Request) error
 					atomic.AddInt64(&decoder.invalidValue, 1)
 					continue
 				}
-				dp := datapoint.New(jsonDatapoint.Metric, jsonDatapoint.Dimensions, v, fromMT(com_signalfx_metrics_protobuf.MetricType(mt)), fromTs(jsonDatapoint.Timestamp))
+				dp := datapoint.New(jsonDatapoint.Metric, jsonDatapoint.Dimensions, v, fromMT(sfxmodel.MetricType(mt)), fromTs(jsonDatapoint.Timestamp))
 				dps = append(dps, dp)
 			}
 		}

@@ -8,20 +8,18 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/signalfx/golib/v3/datapoint/dpsink"
-	"github.com/signalfx/ingest-protocols/protocol/signalfx/spanobfuscation"
+	"github.com/gogo/protobuf/proto"
 
-	"net/http/httptest"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
+	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/datapoint/dptest"
 	"github.com/signalfx/golib/v3/errors"
 	"github.com/signalfx/golib/v3/event"
@@ -32,6 +30,7 @@ import (
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/golib/v3/web"
 	"github.com/signalfx/ingest-protocols/protocol/filtering"
+	"github.com/signalfx/ingest-protocols/protocol/signalfx/spanobfuscation"
 	"github.com/signalfx/ingest-protocols/sampling"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +68,7 @@ func TestSignalfxProtoDecoders(t *testing.T) {
 func TestSignalfxProtobufV1Decoder(t *testing.T) {
 	Convey("a setup metric decoder", t, func() {
 		typeGetter := metricHandler{
-			metricCreationsMap: make(map[string]com_signalfx_metrics_protobuf.MetricType),
+			metricCreationsMap: make(map[string]sfxmodel.MetricType),
 		}
 		sendTo := dptest.NewBasicSink()
 		ctx := context.Background()
@@ -119,7 +118,7 @@ func TestSignalfxProtobufV1Decoder(t *testing.T) {
 			req := &http.Request{
 				Body: ioutil.NopCloser(bytes.NewReader(append(varintBytes, []byte("01234567890123456789")...))),
 			}
-			So(decoder.Read(ctx, req).Error(), ShouldEqual, io.ErrUnexpectedEOF.Error())
+			So(decoder.Read(ctx, req).Error(), ShouldEqual, "proto: wrong wireType = 0 for field Dimensions")
 		})
 	})
 }
@@ -501,7 +500,7 @@ func TestSignalfxListener(t *testing.T) {
 		})
 		Convey("Should be able to send a v1 metric type", func() {
 			trySend(`[{"sf_metric":"bob", "sf_metricType": "GAUGE"}]`, "application/json", "/v1/metric")
-			So(listener.metricHandler.GetMetricTypeFromMap("bob"), ShouldEqual, com_signalfx_metrics_protobuf.MetricType_GAUGE)
+			So(listener.metricHandler.GetMetricTypeFromMap("bob"), ShouldEqual, sfxmodel.MetricType_GAUGE)
 		})
 		Convey("Should check v1 JSON errors", func() {
 			listener.metricHandler.jsonMarshal = func(v interface{}) ([]byte, error) {
@@ -535,9 +534,9 @@ func TestSignalfxListener(t *testing.T) {
 				Metric: "metric",
 				Value:  datapoint.NewIntValue(3),
 			}
-			dp := &com_signalfx_metrics_protobuf.DataPoint{
-				Metric: pointer.String("metric"),
-				Value: &com_signalfx_metrics_protobuf.Datum{
+			dp := &sfxmodel.DataPoint{
+				Metric: "metric",
+				Value: sfxmodel.Datum{
 					IntValue: pointer.Int64(3),
 				},
 			}
