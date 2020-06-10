@@ -19,7 +19,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(in *jlexer.Lexer, out *JSONLogHECV1List) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(in *jlexer.Lexer, out *JSONEventV2) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -28,21 +28,21 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Delim('[')
 		if *out == nil {
 			if !in.IsDelim(']') {
-				*out = make(JSONLogHECV1List, 0, 8)
+				*out = make(JSONEventV2, 0, 8)
 			} else {
-				*out = JSONLogHECV1List{}
+				*out = JSONEventV2{}
 			}
 		} else {
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v1 *JSONLogHECV1
+			var v1 *EventSendFormatV2
 			if in.IsNull() {
 				in.Skip()
 				v1 = nil
 			} else {
 				if v1 == nil {
-					v1 = new(JSONLogHECV1)
+					v1 = new(EventSendFormatV2)
 				}
 				(*v1).UnmarshalEasyJSON(in)
 			}
@@ -55,7 +55,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(out *jwriter.Writer, in JSONLogHECV1List) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(out *jwriter.Writer, in JSONEventV2) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
@@ -75,310 +75,29 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 }
 
 // MarshalJSON supports json.Marshaler interface
-func (v JSONLogHECV1List) MarshalJSON() ([]byte, error) {
+func (v JSONEventV2) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
 	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v JSONLogHECV1List) MarshalEasyJSON(w *jwriter.Writer) {
+func (v JSONEventV2) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
-func (v *JSONLogHECV1List) UnmarshalJSON(data []byte) error {
+func (v *JSONEventV2) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
 	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *JSONLogHECV1List) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *JSONEventV2) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(in *jlexer.Lexer, out *JSONLogHECV1) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeString()
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "time":
-			if in.IsNull() {
-				in.Skip()
-				out.Time = nil
-			} else {
-				if out.Time == nil {
-					out.Time = new(int64)
-				}
-				*out.Time = int64(in.Int64())
-			}
-		case "host":
-			out.Host = string(in.String())
-		case "source":
-			out.Source = string(in.String())
-		case "sourcetype":
-			out.SourceType = string(in.String())
-		case "fields":
-			if in.IsNull() {
-				in.Skip()
-			} else {
-				in.Delim('{')
-				if !in.IsDelim('}') {
-					out.Fields = make(map[string]interface{})
-				} else {
-					out.Fields = nil
-				}
-				for !in.IsDelim('}') {
-					key := string(in.String())
-					in.WantColon()
-					var v4 interface{}
-					if m, ok := v4.(easyjson.Unmarshaler); ok {
-						m.UnmarshalEasyJSON(in)
-					} else if m, ok := v4.(json.Unmarshaler); ok {
-						_ = m.UnmarshalJSON(in.Raw())
-					} else {
-						v4 = in.Interface()
-					}
-					(out.Fields)[key] = v4
-					in.WantComma()
-				}
-				in.Delim('}')
-			}
-		case "index":
-			out.Index = string(in.String())
-		case "event":
-			if m, ok := out.Event.(easyjson.Unmarshaler); ok {
-				m.UnmarshalEasyJSON(in)
-			} else if m, ok := out.Event.(json.Unmarshaler); ok {
-				_ = m.UnmarshalJSON(in.Raw())
-			} else {
-				out.Event = in.Interface()
-			}
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(out *jwriter.Writer, in JSONLogHECV1) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	if in.Time != nil {
-		const prefix string = ",\"time\":"
-		first = false
-		out.RawString(prefix[1:])
-		out.Int64(int64(*in.Time))
-	}
-	if in.Host != "" {
-		const prefix string = ",\"host\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.Host))
-	}
-	if in.Source != "" {
-		const prefix string = ",\"source\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.Source))
-	}
-	if in.SourceType != "" {
-		const prefix string = ",\"sourcetype\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.SourceType))
-	}
-	if len(in.Fields) != 0 {
-		const prefix string = ",\"fields\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		{
-			out.RawByte('{')
-			v5First := true
-			for v5Name, v5Value := range in.Fields {
-				if v5First {
-					v5First = false
-				} else {
-					out.RawByte(',')
-				}
-				out.String(string(v5Name))
-				out.RawByte(':')
-				if m, ok := v5Value.(easyjson.Marshaler); ok {
-					m.MarshalEasyJSON(out)
-				} else if m, ok := v5Value.(json.Marshaler); ok {
-					out.Raw(m.MarshalJSON())
-				} else {
-					out.Raw(json.Marshal(v5Value))
-				}
-			}
-			out.RawByte('}')
-		}
-	}
-	if in.Index != "" {
-		const prefix string = ",\"index\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.Index))
-	}
-	{
-		const prefix string = ",\"event\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		if m, ok := in.Event.(easyjson.Marshaler); ok {
-			m.MarshalEasyJSON(out)
-		} else if m, ok := in.Event.(json.Marshaler); ok {
-			out.Raw(m.MarshalJSON())
-		} else {
-			out.Raw(json.Marshal(in.Event))
-		}
-	}
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v JSONLogHECV1) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v JSONLogHECV1) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *JSONLogHECV1) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *JSONLogHECV1) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(l, v)
-}
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(in *jlexer.Lexer, out *JSONEventV2) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		in.Skip()
-		*out = nil
-	} else {
-		in.Delim('[')
-		if *out == nil {
-			if !in.IsDelim(']') {
-				*out = make(JSONEventV2, 0, 8)
-			} else {
-				*out = JSONEventV2{}
-			}
-		} else {
-			*out = (*out)[:0]
-		}
-		for !in.IsDelim(']') {
-			var v6 *EventSendFormatV2
-			if in.IsNull() {
-				in.Skip()
-				v6 = nil
-			} else {
-				if v6 == nil {
-					v6 = new(EventSendFormatV2)
-				}
-				(*v6).UnmarshalEasyJSON(in)
-			}
-			*out = append(*out, v6)
-			in.WantComma()
-		}
-		in.Delim(']')
-	}
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(out *jwriter.Writer, in JSONEventV2) {
-	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-		out.RawString("null")
-	} else {
-		out.RawByte('[')
-		for v7, v8 := range in {
-			if v7 > 0 {
-				out.RawByte(',')
-			}
-			if v8 == nil {
-				out.RawString("null")
-			} else {
-				(*v8).MarshalEasyJSON(out)
-			}
-		}
-		out.RawByte(']')
-	}
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v JSONEventV2) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v JSONEventV2) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *JSONEventV2) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *JSONEventV2) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(l, v)
-}
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(in *jlexer.Lexer, out *JSONDatapointV2) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(in *jlexer.Lexer, out *JSONDatapointV2) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -392,38 +111,38 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		for !in.IsDelim('}') {
 			key := string(in.String())
 			in.WantColon()
-			var v9 []*BodySendFormatV2
+			var v4 []*BodySendFormatV2
 			if in.IsNull() {
 				in.Skip()
-				v9 = nil
+				v4 = nil
 			} else {
 				in.Delim('[')
-				if v9 == nil {
+				if v4 == nil {
 					if !in.IsDelim(']') {
-						v9 = make([]*BodySendFormatV2, 0, 8)
+						v4 = make([]*BodySendFormatV2, 0, 8)
 					} else {
-						v9 = []*BodySendFormatV2{}
+						v4 = []*BodySendFormatV2{}
 					}
 				} else {
-					v9 = (v9)[:0]
+					v4 = (v4)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v10 *BodySendFormatV2
+					var v5 *BodySendFormatV2
 					if in.IsNull() {
 						in.Skip()
-						v10 = nil
+						v5 = nil
 					} else {
-						if v10 == nil {
-							v10 = new(BodySendFormatV2)
+						if v5 == nil {
+							v5 = new(BodySendFormatV2)
 						}
-						(*v10).UnmarshalEasyJSON(in)
+						(*v5).UnmarshalEasyJSON(in)
 					}
-					v9 = append(v9, v10)
+					v4 = append(v4, v5)
 					in.WantComma()
 				}
 				in.Delim(']')
 			}
-			(*out)[key] = v9
+			(*out)[key] = v4
 			in.WantComma()
 		}
 		in.Delim('}')
@@ -432,32 +151,32 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(out *jwriter.Writer, in JSONDatapointV2) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(out *jwriter.Writer, in JSONDatapointV2) {
 	if in == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
 		out.RawString(`null`)
 	} else {
 		out.RawByte('{')
-		v11First := true
-		for v11Name, v11Value := range in {
-			if v11First {
-				v11First = false
+		v6First := true
+		for v6Name, v6Value := range in {
+			if v6First {
+				v6First = false
 			} else {
 				out.RawByte(',')
 			}
-			out.String(string(v11Name))
+			out.String(string(v6Name))
 			out.RawByte(':')
-			if v11Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			if v6Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 				out.RawString("null")
 			} else {
 				out.RawByte('[')
-				for v12, v13 := range v11Value {
-					if v12 > 0 {
+				for v7, v8 := range v6Value {
+					if v7 > 0 {
 						out.RawByte(',')
 					}
-					if v13 == nil {
+					if v8 == nil {
 						out.RawString("null")
 					} else {
-						(*v13).MarshalEasyJSON(out)
+						(*v8).MarshalEasyJSON(out)
 					}
 				}
 				out.RawByte(']')
@@ -470,27 +189,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v JSONDatapointV2) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v JSONDatapointV2) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *JSONDatapointV2) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *JSONDatapointV2) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat1(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(in *jlexer.Lexer, out *JSONDatapointV1) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(in *jlexer.Lexer, out *JSONDatapointV1) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -525,7 +244,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(out *jwriter.Writer, in JSONDatapointV1) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(out *jwriter.Writer, in JSONDatapointV1) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -550,27 +269,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v JSONDatapointV1) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v JSONDatapointV1) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *JSONDatapointV1) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *JSONDatapointV1) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat2(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(in *jlexer.Lexer, out *InputSpanList) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(in *jlexer.Lexer, out *InputSpanList) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -587,17 +306,17 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v14 *InputSpan
+			var v9 *InputSpan
 			if in.IsNull() {
 				in.Skip()
-				v14 = nil
+				v9 = nil
 			} else {
-				if v14 == nil {
-					v14 = new(InputSpan)
+				if v9 == nil {
+					v9 = new(InputSpan)
 				}
-				(*v14).UnmarshalEasyJSON(in)
+				(*v9).UnmarshalEasyJSON(in)
 			}
-			*out = append(*out, v14)
+			*out = append(*out, v9)
 			in.WantComma()
 		}
 		in.Delim(']')
@@ -606,19 +325,19 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(out *jwriter.Writer, in InputSpanList) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(out *jwriter.Writer, in InputSpanList) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v15, v16 := range in {
-			if v15 > 0 {
+		for v10, v11 := range in {
+			if v10 > 0 {
 				out.RawByte(',')
 			}
-			if v16 == nil {
+			if v11 == nil {
 				out.RawString("null")
 			} else {
-				(*v16).MarshalEasyJSON(out)
+				(*v11).MarshalEasyJSON(out)
 			}
 		}
 		out.RawByte(']')
@@ -628,27 +347,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v InputSpanList) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v InputSpanList) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *InputSpanList) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *InputSpanList) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat3(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(in *jlexer.Lexer, out *InputSpan) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(in *jlexer.Lexer, out *InputSpan) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -703,17 +422,17 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 					out.Annotations = (out.Annotations)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v17 *InputAnnotation
+					var v12 *InputAnnotation
 					if in.IsNull() {
 						in.Skip()
-						v17 = nil
+						v12 = nil
 					} else {
-						if v17 == nil {
-							v17 = new(InputAnnotation)
+						if v12 == nil {
+							v12 = new(InputAnnotation)
 						}
-						(*v17).UnmarshalEasyJSON(in)
+						(*v12).UnmarshalEasyJSON(in)
 					}
-					out.Annotations = append(out.Annotations, v17)
+					out.Annotations = append(out.Annotations, v12)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -734,17 +453,17 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 					out.BinaryAnnotations = (out.BinaryAnnotations)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v18 *BinaryAnnotation
+					var v13 *BinaryAnnotation
 					if in.IsNull() {
 						in.Skip()
-						v18 = nil
+						v13 = nil
 					} else {
-						if v18 == nil {
-							v18 = new(BinaryAnnotation)
+						if v13 == nil {
+							v13 = new(BinaryAnnotation)
 						}
-						(*v18).UnmarshalEasyJSON(in)
+						(*v13).UnmarshalEasyJSON(in)
 					}
-					out.BinaryAnnotations = append(out.BinaryAnnotations, v18)
+					out.BinaryAnnotations = append(out.BinaryAnnotations, v13)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -836,9 +555,9 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v19 string
-					v19 = string(in.String())
-					(out.Tags)[key] = v19
+					var v14 string
+					v14 = string(in.String())
+					(out.Tags)[key] = v14
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -853,7 +572,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(out *jwriter.Writer, in InputSpan) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(out *jwriter.Writer, in InputSpan) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -882,14 +601,14 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v20, v21 := range in.Annotations {
-				if v20 > 0 {
+			for v15, v16 := range in.Annotations {
+				if v15 > 0 {
 					out.RawByte(',')
 				}
-				if v21 == nil {
+				if v16 == nil {
 					out.RawString("null")
 				} else {
-					(*v21).MarshalEasyJSON(out)
+					(*v16).MarshalEasyJSON(out)
 				}
 			}
 			out.RawByte(']')
@@ -902,14 +621,14 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v22, v23 := range in.BinaryAnnotations {
-				if v22 > 0 {
+			for v17, v18 := range in.BinaryAnnotations {
+				if v17 > 0 {
 					out.RawByte(',')
 				}
-				if v23 == nil {
+				if v18 == nil {
 					out.RawString("null")
 				} else {
-					(*v23).MarshalEasyJSON(out)
+					(*v18).MarshalEasyJSON(out)
 				}
 			}
 			out.RawByte(']')
@@ -965,16 +684,16 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		out.RawString(prefix)
 		{
 			out.RawByte('{')
-			v24First := true
-			for v24Name, v24Value := range in.Tags {
-				if v24First {
-					v24First = false
+			v19First := true
+			for v19Name, v19Value := range in.Tags {
+				if v19First {
+					v19First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v24Name))
+				out.String(string(v19Name))
 				out.RawByte(':')
-				out.String(string(v24Value))
+				out.String(string(v19Value))
 			}
 			out.RawByte('}')
 		}
@@ -985,25 +704,25 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v InputSpan) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v InputSpan) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *InputSpan) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *InputSpan) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat4(l, v)
 }
 func easyjson3b0ebf6aDecodeGithubComSignalfxGolibV3Trace(in *jlexer.Lexer, out *trace.Endpoint) {
 	isTopLevel := in.IsStart()
@@ -1116,7 +835,7 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxGolibV3Trace(out *jwriter.Writer, in
 	}
 	out.RawByte('}')
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(in *jlexer.Lexer, out *InputAnnotation) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(in *jlexer.Lexer, out *InputAnnotation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1175,7 +894,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(out *jwriter.Writer, in InputAnnotation) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(out *jwriter.Writer, in InputAnnotation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1212,27 +931,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v InputAnnotation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v InputAnnotation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *InputAnnotation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *InputAnnotation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat5(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(in *jlexer.Lexer, out *EventSendFormatV2) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(in *jlexer.Lexer, out *EventSendFormatV2) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1276,9 +995,9 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v25 string
-					v25 = string(in.String())
-					(out.Dimensions)[key] = v25
+					var v20 string
+					v20 = string(in.String())
+					(out.Dimensions)[key] = v20
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -1296,15 +1015,15 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v26 interface{}
-					if m, ok := v26.(easyjson.Unmarshaler); ok {
+					var v21 interface{}
+					if m, ok := v21.(easyjson.Unmarshaler); ok {
 						m.UnmarshalEasyJSON(in)
-					} else if m, ok := v26.(json.Unmarshaler); ok {
+					} else if m, ok := v21.(json.Unmarshaler); ok {
 						_ = m.UnmarshalJSON(in.Raw())
 					} else {
-						v26 = in.Interface()
+						v21 = in.Interface()
 					}
-					(out.Properties)[key] = v26
+					(out.Properties)[key] = v21
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -1329,7 +1048,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(out *jwriter.Writer, in EventSendFormatV2) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(out *jwriter.Writer, in EventSendFormatV2) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1354,16 +1073,16 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v27First := true
-			for v27Name, v27Value := range in.Dimensions {
-				if v27First {
-					v27First = false
+			v22First := true
+			for v22Name, v22Value := range in.Dimensions {
+				if v22First {
+					v22First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v27Name))
+				out.String(string(v22Name))
 				out.RawByte(':')
-				out.String(string(v27Value))
+				out.String(string(v22Value))
 			}
 			out.RawByte('}')
 		}
@@ -1375,21 +1094,21 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v28First := true
-			for v28Name, v28Value := range in.Properties {
-				if v28First {
-					v28First = false
+			v23First := true
+			for v23Name, v23Value := range in.Properties {
+				if v23First {
+					v23First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v28Name))
+				out.String(string(v23Name))
 				out.RawByte(':')
-				if m, ok := v28Value.(easyjson.Marshaler); ok {
+				if m, ok := v23Value.(easyjson.Marshaler); ok {
 					m.MarshalEasyJSON(out)
-				} else if m, ok := v28Value.(json.Marshaler); ok {
+				} else if m, ok := v23Value.(json.Marshaler); ok {
 					out.Raw(m.MarshalJSON())
 				} else {
-					out.Raw(json.Marshal(v28Value))
+					out.Raw(json.Marshal(v23Value))
 				}
 			}
 			out.RawByte('}')
@@ -1410,27 +1129,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v EventSendFormatV2) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v EventSendFormatV2) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *EventSendFormatV2) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *EventSendFormatV2) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat6(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(in *jlexer.Lexer, out *BodySendFormatV2) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(in *jlexer.Lexer, out *BodySendFormatV2) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1474,9 +1193,9 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v29 string
-					v29 = string(in.String())
-					(out.Dimensions)[key] = v29
+					var v24 string
+					v24 = string(in.String())
+					(out.Dimensions)[key] = v24
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -1491,7 +1210,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(out *jwriter.Writer, in BodySendFormatV2) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(out *jwriter.Writer, in BodySendFormatV2) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1523,16 +1242,16 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v30First := true
-			for v30Name, v30Value := range in.Dimensions {
-				if v30First {
-					v30First = false
+			v25First := true
+			for v25Name, v25Value := range in.Dimensions {
+				if v25First {
+					v25First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v30Name))
+				out.String(string(v25Name))
 				out.RawByte(':')
-				out.String(string(v30Value))
+				out.String(string(v25Value))
 			}
 			out.RawByte('}')
 		}
@@ -1543,27 +1262,27 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v BodySendFormatV2) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BodySendFormatV2) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BodySendFormatV2) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BodySendFormatV2) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat9(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat7(l, v)
 }
-func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(in *jlexer.Lexer, out *BinaryAnnotation) {
+func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(in *jlexer.Lexer, out *BinaryAnnotation) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1628,7 +1347,7 @@ func easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 		in.Consumed()
 	}
 }
-func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(out *jwriter.Writer, in BinaryAnnotation) {
+func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(out *jwriter.Writer, in BinaryAnnotation) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1671,23 +1390,23 @@ func easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxForma
 // MarshalJSON supports json.Marshaler interface
 func (v BinaryAnnotation) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(&w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BinaryAnnotation) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(w, v)
+	easyjson3b0ebf6aEncodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BinaryAnnotation) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(&r, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BinaryAnnotation) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat10(l, v)
+	easyjson3b0ebf6aDecodeGithubComSignalfxIngestProtocolsProtocolSignalfxFormat8(l, v)
 }
