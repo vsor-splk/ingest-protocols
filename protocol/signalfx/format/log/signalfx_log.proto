@@ -11,7 +11,7 @@ message LogRequest {
 
 // ResourceLogs handles either sharing a resource with list of LogRecord or unique for each logRecord
 message ResourceLogs {
-    Resource resource = 1;
+    KeyValueList resource = 1;
     repeated LogRecord logRecords = 2;
 }
 
@@ -59,11 +59,6 @@ message KeyValue {
 enum LogRecordFlags {
     UNDEFINED = 0;
     TRACE_FLAG_MASK = 0x000000FF;
-}
-
-// Resource consists of a list of {key, value} pairs
-message Resource {
-    repeated KeyValue values = 1;
 }
 
 // Value list is a list of any values
