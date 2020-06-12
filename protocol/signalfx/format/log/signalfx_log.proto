@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package sfx_log_format;
 
-option go_package = ".;model";
+option go_package = ".;sfx_log_model";
 
 // LogRequest represents the data that is incoming which is a list of ResourceLogs
 message LogRequest {
@@ -17,7 +17,7 @@ message ResourceLogs {
 
 // model is based off https://github.com/open-telemetry/oteps/blob/master/text/0097-log-data-model.md#log-and-event-record-definition
 message LogRecord {
-    fixed64 Timestamp = 1;
+    TimeField Timestamp = 1;
     bytes TraceID = 2;
     bytes SpanID = 3;
     fixed32 TraceFlags = 4;
@@ -38,6 +38,15 @@ message Value {
         double double_value = 4;
         ValueList array_value = 5;
         KeyValueList kvlist_value = 6;
+    }
+}
+
+// some existing schemas have time field as string and hence we should be able to accept such
+// time field into the system. Parsing of such fields will happen at data store layer
+message TimeField {
+    oneof value {
+        string string_value = 1;
+        fixed64 numeric_value = 2;
     }
 }
 
