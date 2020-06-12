@@ -1442,7 +1442,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 }
 
 // nolint:funlen
-func TestParseSAPMFromRequest(t *testing.T) {
+func TestParseJaegerFromRequest(t *testing.T) {
 	Convey("SignalFx / Zipkin v2 spans get converted to jaeger batches", t, func() {
 		// the following test data comes from the github.com/signalfx/golib/trace/translator tests
 		var sourceSpans = []*trace.Span{
@@ -1613,223 +1613,231 @@ func TestParseSAPMFromRequest(t *testing.T) {
 			},
 		}
 
-		var wantPostRequest = []*jaegerpb.Batch{
+		wantFirstProcess := &jaegerpb.Process{
+			ServiceName: "api1",
+			Tags: []jaegerpb.KeyValue{
+				{
+					Key:   "ip",
+					VType: jaegerpb.ValueType_STRING,
+					VStr:  "10.53.69.61",
+				},
+				{
+					Key:   "hostname",
+					VType: jaegerpb.ValueType_STRING,
+					VStr:  "api246-sjc1",
+				},
+				{
+					Key:   "jaeger.version",
+					VType: jaegerpb.ValueType_STRING,
+					VStr:  "Python-3.1.0",
+				},
+			},
+		}
+
+		var wantPostRequest = []*jaegerpb.Span{
 			{
-				Process: &jaegerpb.Process{
-					ServiceName: "api1",
-					Tags: []jaegerpb.KeyValue{
-						{
-							Key:   "ip",
-							VType: jaegerpb.ValueType_STRING,
-							VStr:  "10.53.69.61",
+				SpanID:        jaegerpb.SpanID(0x147d98),
+				TraceID:       jaegerpb.TraceID{Low: 11715721395283892799},
+				OperationName: "get",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Duration(22938000),
+				Flags:         0,
+				Process:       wantFirstProcess,
+				ProcessID:     "",
+				References: []jaegerpb.SpanRef{
+					{
+						TraceID: jaegerpb.TraceID{Low: 11715721395283892799},
+						SpanID:  jaegerpb.SpanID(0x68c4e3),
+						RefType: jaegerpb.SpanRefType_CHILD_OF,
+					},
+				},
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "peer.ipv4",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "192.53.69.61",
+					},
+					{
+						Key:    "peer.port",
+						VType:  jaegerpb.ValueType_INT64,
+						VInt64: 53931,
+					},
+					{
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "server",
+					},
+					{
+						Key:   "someFalseBool",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "false",
+					},
+					{
+						Key:   "someDouble",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "129.8",
+					},
+					{
+						Key:   "http.url",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "http://127.0.0.1:15598/client_transactions",
+					},
+					{
+						Key:   "someBool",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "true",
+					},
+				},
+				Logs: []jaegerpb.Log{
+					{
+						Timestamp: time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+						Fields: []jaegerpb.KeyValue{
+							{
+								Key:   "key1",
+								VType: jaegerpb.ValueType_STRING,
+								VStr:  "value1",
+							},
+							{
+								Key:   "key2",
+								VType: jaegerpb.ValueType_STRING,
+								VStr:  "value2",
+							},
 						},
-						{
-							Key:   "hostname",
-							VType: jaegerpb.ValueType_STRING,
-							VStr:  "api246-sjc1",
-						},
-						{
-							Key:   "jaeger.version",
-							VType: jaegerpb.ValueType_STRING,
-							VStr:  "Python-3.1.0",
+					},
+					{
+						Timestamp: time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+						Fields: []jaegerpb.KeyValue{
+							{
+								Key:   "annotation",
+								VType: jaegerpb.ValueType_STRING,
+								VStr:  "nothing",
+							},
 						},
 					},
 				},
-				Spans: []*jaegerpb.Span{
+				Warnings: nil,
+			},
+			{
+				TraceID:       jaegerpb.TraceID{Low: 12868642899890739775, High: 1},
+				SpanID:        jaegerpb.SpanID(0x21d092272e),
+				OperationName: "post",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
+				Process:       wantFirstProcess,
+				References: []jaegerpb.SpanRef{{
+					TraceID: jaegerpb.TraceID{Low: 12868642899890739775, High: 1},
+					SpanID:  jaegerpb.SpanID(6866147),
+					RefType: jaegerpb.SpanRefType_CHILD_OF,
+				}},
+				Tags: []jaegerpb.KeyValue{
 					{
-						SpanID:        jaegerpb.SpanID(0x147d98),
-						TraceID:       jaegerpb.TraceID{Low: 11715721395283892799},
-						OperationName: "get",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Duration(22938000),
-						Flags:         0,
-						Process:       nil,
-						ProcessID:     "",
-						References: []jaegerpb.SpanRef{
-							{
-								TraceID: jaegerpb.TraceID{Low: 11715721395283892799},
-								SpanID:  jaegerpb.SpanID(0x68c4e3),
-								RefType: jaegerpb.SpanRefType_CHILD_OF,
-							},
-						},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "peer.ipv4",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "192.53.69.61",
-							},
-							{
-								Key:    "peer.port",
-								VType:  jaegerpb.ValueType_INT64,
-								VInt64: 53931,
-							},
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "server",
-							},
-							{
-								Key:   "someFalseBool",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "false",
-							},
-							{
-								Key:   "someDouble",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "129.8",
-							},
-							{
-								Key:   "http.url",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "http://127.0.0.1:15598/client_transactions",
-							},
-							{
-								Key:   "someBool",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "true",
-							},
-						},
-						Logs: []jaegerpb.Log{
-							{
-								Timestamp: time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-								Fields: []jaegerpb.KeyValue{
-									{
-										Key:   "key1",
-										VType: jaegerpb.ValueType_STRING,
-										VStr:  "value1",
-									},
-									{
-										Key:   "key2",
-										VType: jaegerpb.ValueType_STRING,
-										VStr:  "value2",
-									},
-								},
-							},
-							{
-								Timestamp: time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-								Fields: []jaegerpb.KeyValue{
-									{
-										Key:   "annotation",
-										VType: jaegerpb.ValueType_STRING,
-										VStr:  "nothing",
-									},
-								},
-							},
-						},
-						Warnings: nil,
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "client",
 					},
 					{
-						TraceID:       jaegerpb.TraceID{Low: 12868642899890739775, High: 1},
-						SpanID:        jaegerpb.SpanID(0x21d092272e),
-						OperationName: "post",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						References: []jaegerpb.SpanRef{{
-							TraceID: jaegerpb.TraceID{Low: 12868642899890739775, High: 1},
-							SpanID:  jaegerpb.SpanID(6866147),
-							RefType: jaegerpb.SpanRefType_CHILD_OF,
-						}},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "client",
-							},
-							{
-								Key:    "peer.port",
-								VType:  jaegerpb.ValueType_INT64,
-								VInt64: 53931,
-							},
-							{
-								Key:   "peer.ipv4",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "10.0.0.1",
-							},
-						},
-						Logs: []jaegerpb.Log{},
-					}, {
-						TraceID:       jaegerpb.TraceID{Low: 14021564404497586751},
-						SpanID:        jaegerpb.SpanID(213952636718),
-						OperationName: "post",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						References: []jaegerpb.SpanRef{{
-							TraceID: jaegerpb.TraceID{Low: 14021564404497586751},
-							SpanID:  jaegerpb.SpanID(6866147),
-							RefType: jaegerpb.SpanRefType_CHILD_OF,
-						}},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "consumer",
-							},
-						},
-						Logs: []jaegerpb.Log{},
-					}, {
-
-						TraceID:       jaegerpb.TraceID{Low: 15174485909104433727},
-						SpanID:        jaegerpb.SpanID(47532398882098234),
-						OperationName: "post",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						Flags:         2,
-						References: []jaegerpb.SpanRef{
-							{
-								RefType: jaegerpb.SpanRefType_CHILD_OF,
-								TraceID: jaegerpb.TraceID{Low: 15174485909104433727},
-								SpanID:  jaegerpb.SpanID(6866147),
-							},
-						},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "producer",
-							},
-							{
-								Key:   "peer.ipv6",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "::1",
-							},
-						},
-						Logs: []jaegerpb.Log{},
-					}, {
-
-						TraceID:       jaegerpb.TraceID{Low: 16327407413711280703},
-						SpanID:        jaegerpb.SpanID(52035998509468730),
-						OperationName: "post",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						Flags:         2,
-						References: []jaegerpb.SpanRef{
-							{
-								RefType: jaegerpb.SpanRefType_CHILD_OF,
-								TraceID: jaegerpb.TraceID{Low: 16327407413711280703},
-								SpanID:  jaegerpb.SpanID(7914723),
-							},
-						},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "producer",
-							},
-							{
-								Key:   "peer.ipv6",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "::1",
-							},
-							{
-								Key:   "elements",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "100",
-							},
-						},
-						Logs: []jaegerpb.Log{},
+						Key:    "peer.port",
+						VType:  jaegerpb.ValueType_INT64,
+						VInt64: 53931,
+					},
+					{
+						Key:   "peer.ipv4",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "10.0.0.1",
 					},
 				},
+				Logs: []jaegerpb.Log{},
 			}, {
+				TraceID:       jaegerpb.TraceID{Low: 14021564404497586751},
+				SpanID:        jaegerpb.SpanID(213952636718),
+				OperationName: "post",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
+				Process:       wantFirstProcess,
+				References: []jaegerpb.SpanRef{{
+					TraceID: jaegerpb.TraceID{Low: 14021564404497586751},
+					SpanID:  jaegerpb.SpanID(6866147),
+					RefType: jaegerpb.SpanRefType_CHILD_OF,
+				}},
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "consumer",
+					},
+				},
+				Logs: []jaegerpb.Log{},
+			}, {
+
+				TraceID:       jaegerpb.TraceID{Low: 15174485909104433727},
+				SpanID:        jaegerpb.SpanID(47532398882098234),
+				OperationName: "post",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
+				Flags:         2,
+				Process:       wantFirstProcess,
+				References: []jaegerpb.SpanRef{
+					{
+						RefType: jaegerpb.SpanRefType_CHILD_OF,
+						TraceID: jaegerpb.TraceID{Low: 15174485909104433727},
+						SpanID:  jaegerpb.SpanID(6866147),
+					},
+				},
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "producer",
+					},
+					{
+						Key:   "peer.ipv6",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "::1",
+					},
+				},
+				Logs: []jaegerpb.Log{},
+			}, {
+
+				TraceID:       jaegerpb.TraceID{Low: 16327407413711280703},
+				SpanID:        jaegerpb.SpanID(52035998509468730),
+				OperationName: "post",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
+				Flags:         2,
+				Process:       wantFirstProcess,
+				References: []jaegerpb.SpanRef{
+					{
+						RefType: jaegerpb.SpanRefType_CHILD_OF,
+						TraceID: jaegerpb.TraceID{Low: 16327407413711280703},
+						SpanID:  jaegerpb.SpanID(7914723),
+					},
+				},
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "producer",
+					},
+					{
+						Key:   "peer.ipv6",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "::1",
+					},
+					{
+						Key:   "elements",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "100",
+					},
+				},
+				Logs: []jaegerpb.Log{},
+			},
+			{
+				TraceID:       jaegerpb.TraceID{Low: 17480328918319176255},
+				SpanID:        jaegerpb.SpanID(58525199627357242),
+				OperationName: "post",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
+				Flags:         2,
 				Process: &jaegerpb.Process{
 					ServiceName: "api2",
 					Tags: []jaegerpb.KeyValue{
@@ -1850,37 +1858,33 @@ func TestParseSAPMFromRequest(t *testing.T) {
 						},
 					},
 				},
-				Spans: []*jaegerpb.Span{
+				References: []jaegerpb.SpanRef{
 					{
-						TraceID:       jaegerpb.TraceID{Low: 17480328918319176255},
-						SpanID:        jaegerpb.SpanID(58525199627357242),
-						OperationName: "post",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						Flags:         2,
-						References: []jaegerpb.SpanRef{
-							{
-								RefType: jaegerpb.SpanRefType_CHILD_OF,
-								TraceID: jaegerpb.TraceID{Low: 17480328918319176255},
-								SpanID:  jaegerpb.SpanID(0x35c4e2),
-							},
-						},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "producer",
-							},
-							{
-								Key:   "peer.ipv6",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "::1",
-							},
-						},
-						Logs: []jaegerpb.Log{},
+						RefType: jaegerpb.SpanRefType_CHILD_OF,
+						TraceID: jaegerpb.TraceID{Low: 17480328918319176255},
+						SpanID:  jaegerpb.SpanID(0x35c4e2),
 					},
 				},
-			}, {
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "producer",
+					},
+					{
+						Key:   "peer.ipv6",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "::1",
+					},
+				},
+				Logs: []jaegerpb.Log{},
+			},
+			{
+				TraceID:       jaegerpb.TraceID{Low: 18025686685695023674},
+				SpanID:        jaegerpb.SpanID(63028799254727738),
+				OperationName: "get",
+				StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
+				Duration:      time.Microsecond * 22938,
 				Process: &jaegerpb.Process{
 					ServiceName: "api3",
 					Tags: []jaegerpb.KeyValue{
@@ -1901,28 +1905,19 @@ func TestParseSAPMFromRequest(t *testing.T) {
 						},
 					},
 				},
-				Spans: []*jaegerpb.Span{
+				Tags: []jaegerpb.KeyValue{
 					{
-						TraceID:       jaegerpb.TraceID{Low: 18025686685695023674},
-						SpanID:        jaegerpb.SpanID(63028799254727738),
-						OperationName: "get",
-						StartTime:     time.Date(2017, 01, 26, 21, 46, 31, 639875000, time.UTC),
-						Duration:      time.Microsecond * 22938,
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "span.kind",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "client",
-							},
-							{
-								Key:   "peer.ipv6",
-								VType: jaegerpb.ValueType_STRING,
-								VStr:  "::1",
-							},
-						},
-						Logs: []jaegerpb.Log{},
+						Key:   "span.kind",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "client",
+					},
+					{
+						Key:   "peer.ipv6",
+						VType: jaegerpb.ValueType_STRING,
+						VStr:  "::1",
 					},
 				},
+				Logs: []jaegerpb.Log{},
 			},
 		}
 
@@ -1931,17 +1926,13 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		assert.Nil(t, err)
 		req := httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload))
 
-		got, err := ParseSAPMFromRequest(req)
+		got, err := ParseJaegerSpansFromRequest(req)
 		assert.Nil(t, err)
 		assert.NotNil(t, got)
 
 		//assert that the returned batches match the desired batches
-		require.Equal(t, len(wantPostRequest), len(got.Batches))
-		sortBatches(wantPostRequest)
-		sortBatches(got.Batches)
-		for i := 0; i < len(got.Batches); i++ {
-			assertBatchesAreEqual(t, wantPostRequest[i], got.Batches[i])
-		}
+		require.Equal(t, len(wantPostRequest), len(got))
+		assertSpansAreEqual(t, wantPostRequest, got)
 	})
 
 	Convey("Bad SignalFx (Zipkin V2) trace with binary annotations returns an error", t, func() {
@@ -1994,8 +1985,8 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload))
 
 		// parse the request and get the jaeger batch map
-		_, err = ParseMapOfJaegerBatchesFromRequest(req)
-		assert.NotNil(t, err)
+		_, err = ParseJaegerSpansFromRequest(req)
+		assert.Error(t, err)
 	})
 
 	Convey("Zipkin v1 with binary annotations gets converted", t, func() {
@@ -2023,8 +2014,45 @@ func TestParseSAPMFromRequest(t *testing.T) {
 			},
 		}
 
-		want := []*jaegerpb.Batch{
+		want := []*jaegerpb.Span{
 			{
+				TraceID:       jaegerpb.NewTraceID(0x0, 0x1),
+				SpanID:        jaegerpb.NewSpanID(2),
+				OperationName: "test",
+				Logs:          []jaegerpb.Log{},
+				Tags: []jaegerpb.KeyValue{
+					{
+						Key:   "bool",
+						VStr:  "true",
+						VType: jaegerpb.ValueType_STRING,
+					},
+					{
+						Key: "bytes",
+						// byte arrays are json marshalled into base64
+						VStr:  base64.StdEncoding.EncodeToString([]byte("hello")),
+						VType: jaegerpb.ValueType_STRING,
+					},
+					{
+						Key:   "short",
+						VStr:  "20",
+						VType: jaegerpb.ValueType_STRING,
+					},
+					{
+						Key:   "int",
+						VStr:  "32800",
+						VType: jaegerpb.ValueType_STRING,
+					},
+					{
+						Key:   "long",
+						VStr:  "2147483700",
+						VType: jaegerpb.ValueType_STRING,
+					},
+					{
+						Key:   "double",
+						VStr:  "3.1415",
+						VType: jaegerpb.ValueType_STRING,
+					},
+				},
 				Process: jaegerpb.NewProcess("frontend", []jaegerpb.KeyValue{
 					{
 						Key:   "ip",
@@ -2032,47 +2060,6 @@ func TestParseSAPMFromRequest(t *testing.T) {
 						VType: jaegerpb.ValueType_STRING,
 					},
 				}),
-				Spans: []*jaegerpb.Span{
-					{
-						TraceID:       jaegerpb.NewTraceID(0x0, 0x1),
-						SpanID:        jaegerpb.NewSpanID(2),
-						OperationName: "test",
-						Logs:          []jaegerpb.Log{},
-						Tags: []jaegerpb.KeyValue{
-							{
-								Key:   "bool",
-								VStr:  "true",
-								VType: jaegerpb.ValueType_STRING,
-							},
-							{
-								Key: "bytes",
-								// byte arrays are json marshalled into base64
-								VStr:  base64.StdEncoding.EncodeToString([]byte("hello")),
-								VType: jaegerpb.ValueType_STRING,
-							},
-							{
-								Key:   "short",
-								VStr:  "20",
-								VType: jaegerpb.ValueType_STRING,
-							},
-							{
-								Key:   "int",
-								VStr:  "32800",
-								VType: jaegerpb.ValueType_STRING,
-							},
-							{
-								Key:   "long",
-								VStr:  "2147483700",
-								VType: jaegerpb.ValueType_STRING,
-							},
-							{
-								Key:   "double",
-								VStr:  "3.1415",
-								VType: jaegerpb.ValueType_STRING,
-							},
-						},
-					},
-				},
 			},
 		}
 
@@ -2082,19 +2069,14 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload))
 
 		// parse the request and get the jaeger batch map
-		got, err := ParseSAPMFromRequest(req)
+		got, err := ParseJaegerSpansFromRequest(req)
 		assert.Nil(t, err)
 		assert.NotNil(t, got)
 		assert.NotEmpty(t, got)
 
 		//assert that the returned batches match the desired batches
-		require.Equal(t, len(want), len(got.Batches))
-		sortBatches(want)
-		sortBatches(got.Batches)
-		for i := 0; i < len(got.Batches); i++ {
-			assertBatchesAreEqual(t, want[i], got.Batches[i])
-		}
-
+		require.Equal(t, len(want), len(got))
+		assertSpansAreEqual(t, want, got)
 	})
 
 	Convey("Bad Zipkin v1 with invalid binary annotation values returns an error", t, func() {
@@ -2119,29 +2101,16 @@ func TestParseSAPMFromRequest(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/trace", strings.NewReader(span))
 
 		// parse the request and get the jaeger batch map
-		_, err := ParseSAPMFromRequest(req)
-		assert.NotNil(t, err)
+		_, err := ParseJaegerSpansFromRequest(req)
+		assert.Error(t, err)
 	})
 
 	Convey("malformed payload should return a marshal error", t, func() {
 		req := httptest.NewRequest("POST", "/v1/trace", strings.NewReader("{{},"))
 
 		// parse the request and get the jaeger batch map
-		_, err := ParseSAPMFromRequest(req)
-		assert.NotNil(t, err)
-	})
-}
-
-func sortBatches(batches []*jaegerpb.Batch) {
-	sort.Slice(batches, func(i, j int) bool {
-		s1, s2 := "", ""
-		if batches[i].Process != nil {
-			s1 = batches[i].Process.ServiceName
-		}
-		if batches[j].Process != nil {
-			s2 = batches[j].Process.ServiceName
-		}
-		return s1 <= s2
+		_, err := ParseJaegerSpansFromRequest(req)
+		assert.Error(t, err)
 	})
 }
 
@@ -2179,14 +2148,11 @@ func sortedSpan(s *jaegerpb.Span) *jaegerpb.Span {
 	sortLogs(s.Logs)
 	sortTags(s.Tags)
 	sortRefs(s.References)
+	if s.Process != nil {
+		sortTags(s.Process.Tags)
+	}
 	sort.Strings(s.Warnings)
 	return s
-}
-
-func assertProcessesAreEqual(t *testing.T, want, got *jaegerpb.Process) {
-	sortTags(want.Tags)
-	sortTags(got.Tags)
-	assert.Equal(t, want, got)
 }
 
 func assertSpansAreEqual(t *testing.T, want, got []*jaegerpb.Span) {
@@ -2197,17 +2163,10 @@ func assertSpansAreEqual(t *testing.T, want, got []*jaegerpb.Span) {
 	}
 }
 
-func assertBatchesAreEqual(t *testing.T, want, got *jaegerpb.Batch) {
-	require.Equal(t, len(want.Spans), len(got.Spans))
-	assertProcessesAreEqual(t, want.Process, got.Process)
-	assertSpansAreEqual(t, want.Spans, got.Spans)
+var benchmarkResults interface{}
 
-}
-
-var benchmarkResults map[[32]byte]*jaegerpb.Batch
-
-func BenchmarkParseMapOfJaegerBatchesFromRequest(b *testing.B) {
-	var batches map[[32]byte]*jaegerpb.Batch
+func BenchmarkParseJaegerFromRequest(b *testing.B) {
+	var batches []*jaegerpb.Span
 
 	// test data taken from github.com/signalfx/golib/trace/translator tests
 	var sourceSpans = []*trace.Span{
@@ -2381,7 +2340,7 @@ func BenchmarkParseMapOfJaegerBatchesFromRequest(b *testing.B) {
 	assert.Nil(b, err)
 
 	for n := 0; n < b.N; n++ {
-		batches, _ = ParseMapOfJaegerBatchesFromRequest(httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload)))
+		batches, _ = ParseJaegerSpansFromRequest(httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload)))
 	}
 
 	// This is to prevent a compiler optimization during the benchmark.
