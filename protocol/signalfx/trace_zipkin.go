@@ -18,8 +18,8 @@ import (
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/golib/v3/trace/translator"
 	"github.com/signalfx/golib/v3/web"
+
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
-	splunksapm "github.com/signalfx/sapm-proto/gen"
 )
 
 // InputSpan is an alias
@@ -614,14 +614,14 @@ func normalizeParentSpanID(parentSpanID *string) *string {
 	return parentSpanID
 }
 
-// ParseMapOfJaegerBatchesFromRequest parses a signalfx, zipkinV1, or zipkinV2 json request into an array of jaeger batches
-func ParseMapOfJaegerBatchesFromRequest(req *http.Request) (map[[32]byte]*jaegerpb.Batch, error) {
+// ParseJaegerSpansFromRequest parses a signalfx, zipkinV1, or zipkinV2 json request into an array of jaeger spans.
+func ParseJaegerSpansFromRequest(req *http.Request) ([]*jaegerpb.Span, error) {
 	var input signalfxformat.InputSpanList
 	if err := easyjson.UnmarshalFromReader(req.Body, &input); err != nil {
 		return nil, ErrInvalidJSONTraceFormat
 	}
 
-	batcher := translator.SpanBatcher{}
+	spans := make([]*jaegerpb.Span, 0, len(input))
 
 	// Don't let an error converting one set of spans prevent other valid spans
 	// in the same request from being rejected.
@@ -634,7 +634,7 @@ func ParseMapOfJaegerBatchesFromRequest(req *http.Request) (map[[32]byte]*jaeger
 				conversionErrs = conversionErrs.Append(err)
 				continue
 			}
-			batcher.Add(s)
+			spans = append(spans, s)
 		} else {
 			// TODO: optimize conversion of zipkin v1 to SAPM
 			derived, err := inputSpan.fromZipkinV1()
@@ -645,25 +645,12 @@ func ParseMapOfJaegerBatchesFromRequest(req *http.Request) (map[[32]byte]*jaeger
 
 			// Zipkin v1 spans can map to multiple spans in Zipkin v2
 			for _, s := range derived {
-				batcher.Add(translator.SAPMSpanFromSFXSpan(s))
+				spans = append(spans, translator.SAPMSpanFromSFXSpan(s))
 			}
 		}
 	}
 
-	return batcher.Buckets, conversionErrs.ToError(nil)
-}
-
-// ParseSAPMFromRequest parses a signalfx, zipkinV1 or zipkinV2 json request into SAPM
-func ParseSAPMFromRequest(req *http.Request) (*splunksapm.PostSpansRequest, error) {
-	var sapm *splunksapm.PostSpansRequest
-	batches, err := ParseMapOfJaegerBatchesFromRequest(req)
-	if err == nil {
-		sapm = &splunksapm.PostSpansRequest{Batches: make([]*jaegerpb.Batch, 0, len(batches))}
-		for _, s := range batches {
-			sapm.Batches = append(sapm.GetBatches(), s)
-		}
-	}
-	return sapm, err
+	return spans, conversionErrs.ToError(nil)
 }
 
 // JSONTraceDecoderV1 decodes json to structs
