@@ -24,7 +24,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1
 	github.com/signalfx/embetcd v0.0.9
 	github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15
-	github.com/signalfx/golib/v3 v3.3.6
+	github.com/signalfx/golib/v3 v3.3.7
 	github.com/signalfx/sapm-proto v0.4.0
 	github.com/signalfx/xdgbasedir v0.0.0-20160106035722-cd6a71c07e4e
 	github.com/smartystreets/assertions v1.0.1
@@ -36,6 +36,5 @@ require (
 	github.com/uber/tchannel-go v1.16.0 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	google.golang.org/protobuf v1.23.0
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
