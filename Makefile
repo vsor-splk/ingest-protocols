@@ -58,3 +58,8 @@ test: ; $(info $(M) running test cases across all services in ingest-protocols)
 .PHONY: clean
 clean: ; $(info $(M) cleaning test & pkg/cache for $(CURDIR))
 	rm -rf $(CURDIR)/coverage.*
+
+.PHONY: generate
+generate:
+	protoc --gofast_out=./protocol/signalfx/format/log protocol/signalfx/format/log/signalfx_log.proto
+	grep proto.ProtoPackageIsVersion3 protocol/signalfx/format/log/signalfx_log.pb.go > /dev/null
