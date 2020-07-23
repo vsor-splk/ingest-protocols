@@ -31,7 +31,6 @@ import (
 	"github.com/signalfx/golib/v3/web"
 	"github.com/signalfx/ingest-protocols/protocol/filtering"
 	"github.com/signalfx/ingest-protocols/protocol/signalfx/spanobfuscation"
-	"github.com/signalfx/ingest-protocols/sampling"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 )
@@ -296,13 +295,6 @@ func TestSignalfxListener(t *testing.T) {
 			So(err, ShouldBeNil)
 			resp.Body.Close()
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
-		})
-		Convey("And a signalfx forwarder with a smart sampler config should not work", func() {
-			forwardConfig := &ForwarderConfig{
-				TraceSample: &sampling.SmartSampleConfig{},
-			}
-			_, err := NewForwarder(forwardConfig)
-			So(err, ShouldNotBeNil)
 		})
 		Convey("And a signalfx forwarder", func() {
 			forwardConfig := &ForwarderConfig{

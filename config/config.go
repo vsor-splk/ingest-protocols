@@ -24,7 +24,6 @@ import (
 	"github.com/signalfx/ingest-protocols/logkey"
 	"github.com/signalfx/ingest-protocols/protocol/filtering"
 	"github.com/signalfx/ingest-protocols/protocol/signalfx/spanobfuscation"
-	"github.com/signalfx/ingest-protocols/sampling"
 	"github.com/signalfx/xdgbasedir"
 )
 
@@ -36,28 +35,26 @@ type ForwardTo struct {
 	Host                 *string `json:",omitempty"`
 	Port                 *uint16 `json:",omitempty"`
 	Type                 string
-	TimeoutDuration      *time.Duration              `json:"-"`
-	Timeout              *string                     `json:",omitempty"`
-	DefaultSource        *string                     `json:",omitempty"`
-	DefaultAuthToken     *string                     `json:",omitempty"`
-	UseAuthFromRequest   *bool                       `json:",omitempty"`
-	AuthTokenEnvVar      *string                     `json:",omitempty"`
-	BufferSize           *int64                      `json:",omitempty"`
-	Name                 *string                     `json:",omitempty"`
-	DrainingThreads      *int64                      `json:",omitempty"`
-	MetricCreationURL    *string                     `json:",omitempty"`
-	MaxDrainSize         *int64                      `json:",omitempty"`
-	Filename             *string                     `json:",omitempty"`
-	SourceDimensions     *string                     `json:",omitempty"`
-	FormatVersion        *uint32                     `json:",omitempty"`
-	DimensionsOrder      []string                    `json:",omitempty"`
-	Filters              *filtering.FilterObj        `json:",omitempty"`
-	TraceSample          *sampling.SmartSampleConfig `json:",omitempty"`
-	TraceDistributor     *sampling.SmartSampleConfig `json:",omitempty"`
-	AdditionalDimensions map[string]string           `json:",omitempty"`
-	DisableCompression   *bool                       `json:",omitempty"`
-	Client               etcdIntf.Client             `json:"-"`
-	ClusterName          *string                     `json:"-"`
+	TimeoutDuration      *time.Duration       `json:"-"`
+	Timeout              *string              `json:",omitempty"`
+	DefaultSource        *string              `json:",omitempty"`
+	DefaultAuthToken     *string              `json:",omitempty"`
+	UseAuthFromRequest   *bool                `json:",omitempty"`
+	AuthTokenEnvVar      *string              `json:",omitempty"`
+	BufferSize           *int64               `json:",omitempty"`
+	Name                 *string              `json:",omitempty"`
+	DrainingThreads      *int64               `json:",omitempty"`
+	MetricCreationURL    *string              `json:",omitempty"`
+	MaxDrainSize         *int64               `json:",omitempty"`
+	Filename             *string              `json:",omitempty"`
+	SourceDimensions     *string              `json:",omitempty"`
+	FormatVersion        *uint32              `json:",omitempty"`
+	DimensionsOrder      []string             `json:",omitempty"`
+	Filters              *filtering.FilterObj `json:",omitempty"`
+	AdditionalDimensions map[string]string    `json:",omitempty"`
+	DisableCompression   *bool                `json:",omitempty"`
+	Client               etcdIntf.Client      `json:"-"`
+	ClusterName          *string              `json:"-"`
 }
 
 // ListenFrom configures how we listen for datapoints to forward

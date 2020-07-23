@@ -1,6 +1,6 @@
 module github.com/signalfx/ingest-protocols
 
-go 1.13
+go 1.14
 
 replace git.apache.org/thrift.git => github.com/signalfx/thrift v0.0.0-20181211001559-3838fa316492
 

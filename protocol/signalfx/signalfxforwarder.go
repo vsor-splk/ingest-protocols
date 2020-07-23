@@ -19,7 +19,6 @@ import (
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/ingest-protocols/protocol/filtering"
-	"github.com/signalfx/ingest-protocols/sampling"
 )
 
 // Forwarder controls forwarding datapoints to SignalFx
@@ -36,12 +35,11 @@ type Forwarder struct {
 	jsonMarshal func(v interface{}) ([]byte, error)
 	Logger      log.Logger
 	stats       stats
-	sampler     *sampling.SmartSampler
 }
 
 // DebugEndpoints returns the httphandlers of the sampler
 func (connector *Forwarder) DebugEndpoints() map[string]http.Handler {
-	return connector.sampler.DebugEndpoints()
+	return map[string]http.Handler{}
 }
 
 type stats struct {
@@ -68,7 +66,6 @@ type ForwarderConfig struct {
 	JSONMarshal        func(v interface{}) ([]byte, error)
 	Logger             log.Logger
 	DisableCompression *bool
-	TraceSample        *sampling.SmartSampleConfig
 }
 
 var defaultForwarderConfig = &ForwarderConfig{
@@ -129,10 +126,6 @@ func NewForwarder(conf *ForwarderConfig) (ret *Forwarder, err error) {
 	}
 	err = ret.Setup(conf.Filters)
 	if err == nil {
-		if conf.TraceSample != nil {
-			ret.sampler, err = sampling.New(conf.TraceSample, conf.Logger, sendingSink)
-			ret.sampler.ConfigureHTTPSink(sendingSink)
-		}
 		return ret, err
 	}
 	return nil, err
@@ -143,14 +136,12 @@ func (connector *Forwarder) DebugDatapoints() []*datapoint.Datapoint {
 	dps := connector.stats.requests.Datapoints()
 	dps = append(dps, connector.stats.drainSize.Datapoints()...)
 	dps = append(dps, connector.GetFilteredDatapoints()...)
-	dps = append(dps, connector.sampler.DebugDatapoints()...)
 	return dps
 }
 
 // DefaultDatapoints returns a set of default datapoints about the forwarder
 func (connector *Forwarder) DefaultDatapoints() []*datapoint.Datapoint {
-	dps := connector.sampler.DefaultDatapoints()
-	return dps
+	return []*datapoint.Datapoint{}
 }
 
 // Datapoints implements the sfxclient.Collector interface and returns all datapoints
@@ -161,7 +152,7 @@ func (connector *Forwarder) Datapoints() []*datapoint.Datapoint {
 // Close will terminate idle HTTP client connections
 func (connector *Forwarder) Close() error {
 	connector.tr.CloseIdleConnections()
-	return connector.sampler.Close()
+	return nil
 }
 
 // TokenHeaderName is the header key for the auth token in the HTTP request
@@ -195,7 +186,7 @@ func (connector *Forwarder) AddEvents(ctx context.Context, events []*event.Event
 	return connector.sink.AddEvents(ctx, events)
 }
 
-// AddSpans forwards traces to SignalFx, optionally through the sampler
+// AddSpans forwards traces to SignalFx
 func (connector *Forwarder) AddSpans(ctx context.Context, spans []*trace.Span) error {
 	atomic.AddInt64(&connector.stats.pipeline, int64(len(spans)))
 	defer atomic.AddInt64(&connector.stats.pipeline, -int64(len(spans)))
@@ -204,7 +195,7 @@ func (connector *Forwarder) AddSpans(ctx context.Context, spans []*trace.Span) e
 	if len(spans) == 0 {
 		return nil
 	}
-	return connector.sampler.AddSpans(ctx, spans, connector.sink)
+	return connector.sink.AddSpans(ctx, spans)
 }
 
 // Pipeline returns the total of all things forwarded
@@ -212,7 +203,7 @@ func (connector *Forwarder) Pipeline() int64 {
 	return atomic.LoadInt64(&connector.stats.pipeline)
 }
 
-// StartupFinished calls the same interface on the sampler as a hook called by run() after the gateway is up and running
+// StartupFinished calls nothing
 func (connector *Forwarder) StartupFinished() error {
-	return connector.sampler.StartupFinished()
+	return nil
 }
