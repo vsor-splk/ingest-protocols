@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mailru/easyjson"
-
 	jaegerpb "github.com/jaegertracing/jaeger/model"
+	"github.com/mailru/easyjson"
 	"github.com/signalfx/golib/v3/pointer"
+	"github.com/signalfx/golib/v3/sfxclient/spanfilter"
 	"github.com/signalfx/golib/v3/trace"
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 	. "github.com/smartystreets/goconvey/convey"
@@ -27,10 +27,12 @@ import (
 
 type fakeSink struct {
 	handler func([]*trace.Span)
+	ctx     context.Context
 }
 
 func (s *fakeSink) AddSpans(ctx context.Context, spans []*trace.Span) error {
 	s.handler(spans)
+	s.ctx = ctx
 	return nil
 }
 
@@ -159,14 +161,11 @@ func TestZipkinTraceDecoder(t *testing.T) {
      },
 	 {
        "traceId": "abcdef0123456789",
-       "name": "span2",
-       "parentId": "0123456789abcdef",
-       "id": "badspan-cannot-have-kind-and-binary-annotations",
-       "kind": "SERVER",
+       "name": "span3",
+       "parentId": "0000000000000000",
+       "id": "oldspan",
        "timestamp": 2000,
        "duration": 200,
-       "debug": false,
-       "shared": false,
 	   "binaryAnnotations": [
 	     {"key": "a", "value": "v"}
 	   ]
@@ -176,6 +175,7 @@ func TestZipkinTraceDecoder(t *testing.T) {
        "name": "span2",
        "parentId": "0123456789abcdef",
        "id": "badspan-cannot-have-object-as-binary-annotation-value",
+       "kind": "SERVER",
        "timestamp": 2000,
        "duration": 200,
        "debug": false,
@@ -183,27 +183,16 @@ func TestZipkinTraceDecoder(t *testing.T) {
 	   "binaryAnnotations": [
 	     {"key": "a", "value": {"k": "v"}}
 	   ]
-     },
-	 {
-       "traceId": "abcdef0123456789",
-       "name": "span3",
-       "parentId": "0000000000000000",
-       "id": "oldspan",
-       "timestamp": 2000,
-       "duration": 200,
-	   "binaryAnnotations": [
-	     {"key": "a", "value": "v"}
-	   ]
      }
 	]`))
-
-	spans := []*trace.Span{}
-	decoder := JSONTraceDecoderV1{
-		Sink: &fakeSink{
-			handler: func(ss []*trace.Span) {
-				spans = append(spans, ss...)
-			},
+	var spans []*trace.Span
+	fs := &fakeSink{
+		handler: func(ss []*trace.Span) {
+			spans = append(spans, ss...)
 		},
+	}
+	decoder := JSONTraceDecoderV1{
+		Sink: fs,
 	}
 
 	req := http.Request{
@@ -212,8 +201,11 @@ func TestZipkinTraceDecoder(t *testing.T) {
 	err := decoder.Read(context.Background(), &req)
 
 	Convey("Valid spans should be sent even if some error", t, func() {
-		So(err.Error(), ShouldContainSubstring, "invalid binary annotation type")
-
+		So(err, ShouldBeNil)
+		sm := spanfilter.GetSpanFilterMapFromContext(fs.ctx)
+		So(spanfilter.IsInvalid(sm), ShouldBeTrue)
+		smr := sm.(*spanfilter.Map)
+		So(len(smr.Invalid[spanfilter.ZipkinV2BinaryAnnotations]), ShouldEqual, 1)
 		So(spans, ShouldResemble, []*trace.Span{
 			{
 				TraceID:  "0123456789abcdef",
@@ -321,7 +313,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span.Span})
 	})
 
@@ -369,8 +361,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, err := client.fromZipkinV1()
-		So(err, ShouldBeNil)
+		sp := client.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&simpleClient})
 	})
 
@@ -403,7 +394,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := client.fromZipkinV1()
+		sp := client.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&simpleClient})
 	})
 
@@ -434,7 +425,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := client.fromZipkinV1()
+		sp := client.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&simpleClient})
 	})
 
@@ -465,8 +456,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 				{Key: pointer.String("sa"), Value: interfaceAddr(true), Endpoint: backend},
 			},
 		}
-
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -502,7 +492,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -541,7 +531,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := server.fromZipkinV1()
+		sp := server.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&simpleServer})
 	})
 
@@ -570,7 +560,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -599,7 +589,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -625,7 +615,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -655,7 +645,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -684,7 +674,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -718,7 +708,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -746,7 +736,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -780,7 +770,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -807,7 +797,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -838,7 +828,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := local.fromZipkinV1()
+		sp := local.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&simpleLocal})
 	})
 
@@ -914,7 +904,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&client, &server})
 	})
 
@@ -949,7 +939,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -997,7 +987,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&client, &server})
 	})
 
@@ -1038,7 +1028,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&client, &server})
 	})
 
@@ -1066,7 +1056,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1099,7 +1089,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:           map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1131,7 +1121,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1160,7 +1150,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1193,7 +1183,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:           map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1225,7 +1215,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
 	})
 
@@ -1276,7 +1266,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:           map[string]string{},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&producer, &consumer})
 	})
 
@@ -1322,7 +1312,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			Tags:          map[string]string{},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&producer, &consumer})
 	})
 
@@ -1377,7 +1367,7 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := shared.fromZipkinV1()
+		sp := shared.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&first, &second})
 	})
 
@@ -1414,30 +1404,8 @@ func TestZipkinTraceConversion(t *testing.T) {
 			},
 		}
 
-		sp, _ := span.fromZipkinV1()
+		sp := span.fromZipkinV1()
 		So(sp, ShouldResemble, []*trace.Span{&span2})
-	})
-
-	Convey("convertBadBinaryAnnotations", t, func() {
-		span := InputSpan{
-			Span: trace.Span{
-				TraceID: "1",
-				Name:    pointer.String("test"),
-				ID:      "2",
-			},
-			BinaryAnnotations: []*signalfxformat.BinaryAnnotation{
-				{Key: pointer.String("badtype"), Value: interfaceAddr([]int{1, 2, 3}), Endpoint: frontend},
-			},
-		}
-
-		_, err := span.fromZipkinV1()
-		So(err.Error(), ShouldContainSubstring, "invalid binary annotation type")
-	})
-
-	Convey("test traceErrs", t, func() {
-		var t *traceErrs
-		t = t.Append(nil)
-		So(t, ShouldBeNil)
 	})
 }
 
@@ -1594,6 +1562,44 @@ func TestParseJaegerFromRequest(t *testing.T) {
 			},
 			{
 				TraceID: "fa281a8955571a3a",
+				ID:      "DFEC5BE6328C3A",
+				Name:    pointer.String("get"),
+				Kind:    &ClientKind,
+				LocalEndpoint: &trace.Endpoint{
+					ServiceName: pointer.String("api3"),
+					Ipv4:        pointer.String("10.53.67.53"),
+				},
+				RemoteEndpoint: &trace.Endpoint{
+					Ipv6: pointer.String("::1"),
+				},
+				Timestamp: pointer.Int64(1485467191639875),
+				Duration:  pointer.Int64(22938),
+				Tags: map[string]string{
+					"hostname":       "api3-sjc1",
+					"jaeger.version": "Python-3.6.0",
+				},
+			},
+			{
+				TraceID: "fa281a8955571a3a",
+				ID:      spanfilter.InvalidSpanID,
+				Name:    pointer.String("get"),
+				Kind:    &ClientKind,
+				LocalEndpoint: &trace.Endpoint{
+					ServiceName: pointer.String("api3"),
+					Ipv4:        pointer.String("10.53.67.53"),
+				},
+				RemoteEndpoint: &trace.Endpoint{
+					Ipv6: pointer.String("::1"),
+				},
+				Timestamp: pointer.Int64(1485467191639875),
+				Duration:  pointer.Int64(22938),
+				Tags: map[string]string{
+					"hostname":       "api3-sjc1",
+					"jaeger.version": "Python-3.6.0",
+				},
+			},
+			{
+				TraceID: spanfilter.InvalidTraceID,
 				ID:      "DFEC5BE6328C3A",
 				Name:    pointer.String("get"),
 				Kind:    &ClientKind,
@@ -1927,8 +1933,11 @@ func TestParseJaegerFromRequest(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/trace", bytes.NewReader(payload))
 
 		got, err := ParseJaegerSpansFromRequest(req)
-		assert.Nil(t, err)
-		assert.NotNil(t, got)
+		So(spanfilter.IsInvalid(err), ShouldBeTrue)
+		sm := err.(*spanfilter.Map)
+		So(sm.Invalid[spanfilter.InvalidTraceID], ShouldResemble, []string{"DFEC5BE6328C3A"})
+		So(sm.Invalid[spanfilter.InvalidSpanID], ShouldResemble, []string{spanfilter.InvalidSpanID})
+		So(got, ShouldNotBeNil)
 
 		//assert that the returned batches match the desired batches
 		require.Equal(t, len(wantPostRequest), len(got))
@@ -2070,7 +2079,7 @@ func TestParseJaegerFromRequest(t *testing.T) {
 
 		// parse the request and get the jaeger batch map
 		got, err := ParseJaegerSpansFromRequest(req)
-		assert.Nil(t, err)
+		assert.False(t, spanfilter.IsInvalid(err))
 		assert.NotNil(t, got)
 		assert.NotEmpty(t, got)
 

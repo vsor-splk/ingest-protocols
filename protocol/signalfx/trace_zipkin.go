@@ -15,10 +15,10 @@ import (
 	"github.com/signalfx/golib/v3/datapoint/dpsink"
 	"github.com/signalfx/golib/v3/log"
 	"github.com/signalfx/golib/v3/sfxclient"
+	"github.com/signalfx/golib/v3/sfxclient/spanfilter"
 	"github.com/signalfx/golib/v3/trace"
 	"github.com/signalfx/golib/v3/trace/translator"
 	"github.com/signalfx/golib/v3/web"
-
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 )
 
@@ -60,14 +60,13 @@ func (is *InputSpan) v2AnnotationsToJaegerLogs(annotations []*signalfxformat.Inp
 	return logs
 }
 
-var errSpansCannotHaveBinaryAnnotations = errors.New("span cannot have binaryAnnotations with Zipkin V2 fields")
-
 // asZipkinV2 shortcuts the span conversion process and treats the InputSpan as
 // ZipkinV2 and returns that span directly.
-func (is *InputSpan) fromZipkinV2() (*trace.Span, error) {
+func (is *InputSpan) fromZipkinV2(sm *spanfilter.Map) *trace.Span {
 	// Do some basic validation
 	if len(is.BinaryAnnotations) > 0 {
-		return nil, errSpansCannotHaveBinaryAnnotations
+		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.ID)
+		return nil
 	}
 
 	if len(is.Annotations) > 0 {
@@ -78,69 +77,72 @@ func (is *InputSpan) fromZipkinV2() (*trace.Span, error) {
 	}
 	is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
 
-	return &is.Span, nil
+	return &is.Span
 }
 
-func (is *InputSpan) addParentChildSpanReferenceToJaegerSpan(span *jaegerpb.Span) error {
+func (is *InputSpan) addParentChildSpanReferenceToJaegerSpan(span *jaegerpb.Span) {
 	// only add parent/child reference if the parent id can be parsed
-	parentID, err := jaegerpb.SpanIDFromString(*is.Span.ParentID)
-	if err == nil {
+	if parentID, err := jaegerpb.SpanIDFromString(*is.Span.ParentID); err == nil {
 		span.References = append(span.References, jaegerpb.SpanRef{
 			TraceID: span.TraceID,
 			SpanID:  parentID,
 			RefType: jaegerpb.SpanRefType_CHILD_OF,
 		})
 	}
-	return err
 }
 
 // JaegerFromZipkinV2 shortcuts the span conversion process and treats the InputSpan as
 // ZipkinV2 and returns that span directly as SAPM.
-func (is *InputSpan) JaegerFromZipkinV2() (*jaegerpb.Span, error) {
+func (is *InputSpan) JaegerFromZipkinV2(sm *spanfilter.Map) *jaegerpb.Span {
 	// Do some basic validation
 	if len(is.BinaryAnnotations) > 0 {
-		return nil, errors.New("span cannot have binaryAnnotations with Zipkin V2 fields")
+		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.ID)
+		return nil
 	}
 
 	var err error
 	var span = &jaegerpb.Span{Process: &jaegerpb.Process{}}
 
 	span.SpanID, err = jaegerpb.SpanIDFromString(is.ID)
-	if err == nil {
-		span.TraceID, err = jaegerpb.TraceIDFromString(is.TraceID)
-		if err == nil {
-
-			if is.Name != nil {
-				span.OperationName = *is.Name
-			}
-
-			if is.Duration != nil {
-				span.Duration = translator.DurationFromMicroseconds(int64(*is.Duration))
-			}
-
-			if is.Timestamp != nil {
-				span.StartTime = translator.TimeFromMicrosecondsSinceEpoch(int64(*is.Timestamp))
-			}
-
-			if is.Debug != nil && *is.Debug {
-				span.Flags.SetDebug()
-			}
-
-			span.Tags, span.Process.Tags = translator.SFXTagsToJaegerTags(is.Tags, is.RemoteEndpoint, is.Kind)
-
-			translator.GetLocalEndpointInfo(&is.Span, span)
-
-			is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
-
-			if is.Span.ParentID != nil {
-				err = is.addParentChildSpanReferenceToJaegerSpan(span)
-			}
-
-			span.Logs = is.v2AnnotationsToJaegerLogs(is.Annotations)
-		}
+	if err != nil {
+		sm.Add(spanfilter.InvalidSpanID, is.ID)
+		return nil
+	}
+	span.TraceID, err = jaegerpb.TraceIDFromString(is.TraceID)
+	if err != nil {
+		sm.Add(spanfilter.InvalidTraceID, is.ID)
+		return nil
 	}
 
-	return span, err
+	if is.Name != nil {
+		span.OperationName = *is.Name
+	}
+
+	if is.Duration != nil {
+		span.Duration = translator.DurationFromMicroseconds(int64(*is.Duration))
+	}
+
+	if is.Timestamp != nil {
+		span.StartTime = translator.TimeFromMicrosecondsSinceEpoch(int64(*is.Timestamp))
+	}
+
+	if is.Debug != nil && *is.Debug {
+		span.Flags.SetDebug()
+	}
+
+	span.Tags, span.Process.Tags = translator.SFXTagsToJaegerTags(is.Tags, is.RemoteEndpoint, is.Kind)
+
+	translator.GetLocalEndpointInfo(&is.Span, span)
+
+	is.Span.ParentID = normalizeParentSpanID(is.Span.ParentID)
+
+	if is.Span.ParentID != nil {
+		is.addParentChildSpanReferenceToJaegerSpan(span)
+	}
+
+	span.Logs = is.v2AnnotationsToJaegerLogs(is.Annotations)
+
+	return span
 }
 
 // asTraceSpan should be used when we are not sure that the InputSpan is
@@ -150,7 +152,7 @@ func (is *InputSpan) JaegerFromZipkinV2() (*jaegerpb.Span, error) {
 // contain endpoints.  This would also work for Zipkin V2 spans, it just
 // involves a lot more processing.  The conversion code was mostly ported from
 // https://github.com/openzipkin/zipkin/blob/2.8.4/zipkin/src/main/java/zipkin/internal/V2SpanConverter.java
-func (is *InputSpan) fromZipkinV1() ([]*trace.Span, error) {
+func (is *InputSpan) fromZipkinV1() []*trace.Span {
 	if is.Span.Tags == nil {
 		is.Span.Tags = map[string]string{}
 	}
@@ -162,11 +164,9 @@ func (is *InputSpan) fromZipkinV1() ([]*trace.Span, error) {
 		spans: []*trace.Span{&spanCopy},
 	}
 	spanBuilder.processAnnotations(is)
-	if err := spanBuilder.processBinaryAnnotations(is); err != nil {
-		return nil, err
-	}
+	spanBuilder.processBinaryAnnotations(is)
 
-	return spanBuilder.spans, nil
+	return spanBuilder.spans
 }
 
 func (is *InputSpan) endTimestampReflectsSpanDuration(end *signalfxformat.InputAnnotation) bool {
@@ -443,14 +443,11 @@ func (sb *spanBuilder) maybeTimestampDuration(begin, end *signalfxformat.InputAn
 	}
 }
 
-func (sb *spanBuilder) processBinaryAnnotations(is *InputSpan) error {
-	ca, sa, ma, err := sb.pullOutSpecialBinaryAnnotations(is)
-	if err != nil {
-		return err
-	}
+func (sb *spanBuilder) processBinaryAnnotations(is *InputSpan) {
+	ca, sa, ma := sb.pullOutSpecialBinaryAnnotations(is)
 
 	if sb.handleOnlyAddressAnnotations(is, ca, sa) {
-		return nil
+		return
 	}
 
 	if sa != nil {
@@ -464,10 +461,9 @@ func (sb *spanBuilder) processBinaryAnnotations(is *InputSpan) error {
 	if ma != nil {
 		sb.handleMAPresent(is, ma)
 	}
-	return nil
 }
 
-func (sb *spanBuilder) pullOutSpecialBinaryAnnotations(is *InputSpan) (*trace.Endpoint, *trace.Endpoint, *trace.Endpoint, error) {
+func (sb *spanBuilder) pullOutSpecialBinaryAnnotations(is *InputSpan) (*trace.Endpoint, *trace.Endpoint, *trace.Endpoint) {
 	var ca, sa, ma *trace.Endpoint
 	for i := range is.BinaryAnnotations {
 		ba := is.BinaryAnnotations[i]
@@ -492,19 +488,17 @@ func (sb *spanBuilder) pullOutSpecialBinaryAnnotations(is *InputSpan) (*trace.En
 		}
 
 		currentSpan := sb.spanForEndpoint(is, ba.Endpoint)
-		if err := sb.convertToTagOnSpan(currentSpan, ba); err != nil {
-			return nil, nil, nil, err
-		}
+		sb.convertToTagOnSpan(currentSpan, ba)
 	}
-	return ca, sa, ma, nil
+	return ca, sa, ma
 }
 
-func (sb *spanBuilder) convertToTagOnSpan(currentSpan *trace.Span, ba *signalfxformat.BinaryAnnotation) error {
+func (sb *spanBuilder) convertToTagOnSpan(currentSpan *trace.Span, ba *signalfxformat.BinaryAnnotation) {
 	switch val := (*ba.Value).(type) {
 	case string:
 		// don't add marker "lc" tags
 		if *ba.Key == "lc" && len(val) == 0 {
-			return nil
+			return
 		}
 		currentSpan.Tags[*ba.Key] = val
 	case []byte:
@@ -515,9 +509,7 @@ func (sb *spanBuilder) convertToTagOnSpan(currentSpan *trace.Span, ba *signalfxf
 		currentSpan.Tags[*ba.Key] = fmt.Sprintf("%d", val)
 	default:
 		fmt.Printf("invalid binary annotation type of %s, for key %s for span %s\n", reflect.TypeOf(val), *ba.Key, *currentSpan.Name)
-		return fmt.Errorf("invalid binary annotation type of %s, for key %s", reflect.TypeOf(val), *ba.Key)
 	}
-	return nil
 }
 
 // special-case when we are missing core annotations, but we have both address annotations
@@ -570,42 +562,6 @@ func closeEnough(left, right *trace.Endpoint) bool {
 	return *left.ServiceName == *right.ServiceName
 }
 
-// An error wrapper that is nil-safe and requires no initialization.
-type traceErrs struct {
-	count   int
-	lastErr error
-}
-
-// ToError returns the err object if the it has not been instantiated, and itself if it has
-// we do this because err is possibly a response from sbingest which could be a json response
-// and we want to pass this on unmolested but encoding errors are more important so send them
-// if they exist
-func (te *traceErrs) ToError(err error) error {
-	if te == nil {
-		return err
-	}
-	return te
-}
-
-func (te *traceErrs) Error() string {
-	return fmt.Sprintf("%d errors encountered, last one was: %s", te.count, te.lastErr.Error())
-}
-
-func (te *traceErrs) Append(err error) *traceErrs {
-	if err == nil {
-		return te
-	}
-
-	out := te
-	if out == nil {
-		out = &traceErrs{}
-	}
-	out.count++
-	out.lastErr = err
-
-	return out
-}
-
 // A parentSpanID of all hex 0s should be normalized to nil.
 func normalizeParentSpanID(parentSpanID *string) *string {
 	if parentSpanID != nil && strings.Count(*parentSpanID, "0") == len(*parentSpanID) {
@@ -622,35 +578,28 @@ func ParseJaegerSpansFromRequest(req *http.Request) ([]*jaegerpb.Span, error) {
 	}
 
 	spans := make([]*jaegerpb.Span, 0, len(input))
+	sm := &spanfilter.Map{}
 
 	// Don't let an error converting one set of spans prevent other valid spans
 	// in the same request from being rejected.
-	var conversionErrs *traceErrs
 	for _, is := range input {
 		inputSpan := (*InputSpan)(is)
 		if inputSpan.isDefinitelyZipkinV2() {
-			s, err := inputSpan.JaegerFromZipkinV2()
-			if err != nil {
-				conversionErrs = conversionErrs.Append(err)
-				continue
+			if s := inputSpan.JaegerFromZipkinV2(sm); s != nil {
+				spans = append(spans, s)
 			}
-			spans = append(spans, s)
 		} else {
 			// TODO: optimize conversion of zipkin v1 to SAPM
-			derived, err := inputSpan.fromZipkinV1()
-			if err != nil {
-				conversionErrs = conversionErrs.Append(err)
-				continue
-			}
-
-			// Zipkin v1 spans can map to multiple spans in Zipkin v2
-			for _, s := range derived {
-				spans = append(spans, translator.SAPMSpanFromSFXSpan(s))
+			if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
+				// Zipkin v1 spans can map to multiple spans in Zipkin v2
+				for _, s := range derived {
+					spans = append(spans, translator.SAPMSpanFromSFXSpan(s, sm))
+				}
 			}
 		}
 	}
 
-	return spans, conversionErrs.ToError(nil)
+	return spans, sm
 }
 
 // JSONTraceDecoderV1 decodes json to structs
@@ -674,36 +623,27 @@ func (decoder *JSONTraceDecoderV1) Read(ctx context.Context, req *http.Request) 
 	}
 
 	spans := make([]*trace.Span, 0, len(input))
+	ctx, sm := spanfilter.GetSpanFilterMapOrNew(ctx)
 
 	// Don't let an error converting one set of spans prevent other valid spans
 	// in the same request from being rejected.
-	var conversionErrs *traceErrs
 	for _, is := range input {
 		inputSpan := (*InputSpan)(is)
 		if inputSpan.isDefinitelyZipkinV2() {
-			s, err := inputSpan.fromZipkinV2()
 			is.Span.Timestamp = signalfxformat.GetPointerToInt64(inputSpan.Timestamp)
 			is.Span.Duration = signalfxformat.GetPointerToInt64(inputSpan.Duration)
-			if err != nil {
-				conversionErrs = conversionErrs.Append(err)
-				continue
+			if s := inputSpan.fromZipkinV2(sm); s != nil {
+				spans = append(spans, s)
 			}
-
-			spans = append(spans, s)
 		} else {
-			derived, err := inputSpan.fromZipkinV1()
-			if err != nil {
-				conversionErrs = conversionErrs.Append(err)
-				continue
+			if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
+				// Zipkin v1 spans can map to multiple spans in Zipkin v2
+				spans = append(spans, derived...)
 			}
-
-			// Zipkin v1 spans can map to multiple spans in Zipkin v2
-			spans = append(spans, derived...)
 		}
 	}
 
-	err := decoder.Sink.AddSpans(ctx, spans)
-	return conversionErrs.ToError(err)
+	return decoder.Sink.AddSpans(ctx, spans)
 }
 
 func setupJSONTraceV1(ctx context.Context, r *mux.Router, sink Sink, logger log.Logger, httpChain web.NextConstructor, counter *dpsink.Counter) sfxclient.Collector {
