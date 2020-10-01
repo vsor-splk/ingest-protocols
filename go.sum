@@ -201,8 +201,8 @@ github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 h1:WsShHmu12Z
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083/go.mod h1:adPDS6s7WaajdFBV9mQ7i0dKfQ8xiDnF9ZNETVPpp7c=
 github.com/signalfx/golib v2.3.1+incompatible h1:cupW1Ug2X14sXjZXx/qoD8tMlRzKVIA1XDKJSl48H8o=
 github.com/signalfx/golib v2.3.1+incompatible/go.mod h1:nWYefOwlUKWm/SpN/LgVSBnyH1T9NpT1ANlmgRIi1Cs=
-github.com/signalfx/golib/v3 v3.3.14 h1:ZLDM5QFZmbSx/Y7RVJNUm6sqbdYvfjuZHtj1NRV3oUo=
-github.com/signalfx/golib/v3 v3.3.14/go.mod h1:LKKCrEw4rU8ZL/8dVwX5i1+kqm4utB7uaHQpRx587rs=
+github.com/signalfx/golib/v3 v3.3.16 h1:AKcwihBfHJIK3oQyYdpebHSt4btM56a180mrOQrwBdw=
+github.com/signalfx/golib/v3 v3.3.16/go.mod h1:LKKCrEw4rU8ZL/8dVwX5i1+kqm4utB7uaHQpRx587rs=
 github.com/signalfx/gomemcache v0.0.0-20180823214636-4f7ef64c72a9/go.mod h1:Ytb8KfCSyuwy/VILnROdgCvbQLA5ch0nkbG7lKT0BXw=
 github.com/signalfx/sapm-proto v0.4.0 h1:5lQX++6FeIjUZEIcnSgBqhOpmSjMkRBW3y/4ZiKMo5E=
 github.com/signalfx/sapm-proto v0.4.0/go.mod h1:x3gtwJ1GRejtkghB4nYpwixh2zqJrLbPU959ZNhM0Fk=

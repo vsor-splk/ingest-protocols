@@ -45,16 +45,7 @@ func (is *InputSpan) v2AnnotationsToJaegerLogs(annotations []*signalfxformat.Inp
 		if ann.Timestamp != nil {
 			l.Timestamp = translator.TimeFromMicrosecondsSinceEpoch(int64(*ann.Timestamp))
 		}
-		var err error
-		l.Fields, err = translator.FieldsFromJSONString(*ann.Value)
-		if err != nil {
-			// Do our best
-			l.Fields = []jaegerpb.KeyValue{{
-				Key:   "annotation",
-				VType: jaegerpb.ValueType_STRING,
-				VStr:  *ann.Value,
-			}}
-		}
+		l.Fields = translator.FieldsFromJSONString(*ann.Value)
 		logs = append(logs, l)
 	}
 	return logs

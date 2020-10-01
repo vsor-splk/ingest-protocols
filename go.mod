@@ -24,7 +24,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1
 	github.com/signalfx/embetcd v0.0.9
 	github.com/signalfx/gohelpers v0.0.0-20151202220853-ac9f0e053f15
-	github.com/signalfx/golib/v3 v3.3.15
+	github.com/signalfx/golib/v3 v3.3.16
 	github.com/signalfx/sapm-proto v0.4.0
 	github.com/signalfx/xdgbasedir v0.0.0-20160106035722-cd6a71c07e4e
 	github.com/smartystreets/assertions v1.0.1
