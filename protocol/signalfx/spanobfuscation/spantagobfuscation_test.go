@@ -2,6 +2,7 @@ package spanobfuscation
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/signalfx/golib/v3/datapoint"
@@ -137,7 +138,7 @@ func BenchmarkObfTen(b *testing.B) {
 	config := make([]*TagMatchRuleConfig, 0, 10)
 	for i := 0; i < 9; i++ {
 		rule := &TagMatchRuleConfig{
-			Service:   pointer.String("some*test*service" + string(i)),
+			Service:   pointer.String("some*test*service" + strconv.Itoa(i)),
 			Operation: pointer.String("test*"),
 			Tags:      []string{"PII"},
 		}
