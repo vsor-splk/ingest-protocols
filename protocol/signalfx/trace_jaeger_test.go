@@ -471,7 +471,7 @@ func TestJaegerThriftToSAPMDecoder(t *testing.T) {
 `
 	var batch jThrift.Batch
 	err := json.Unmarshal([]byte(jaegerThriftJSON), &batch)
-	batchBytes, err := thrift.NewTSerializer().Write(&batch)
+	batchBytes, err := thrift.NewTSerializer().Write(context.Background(), &batch)
 	if err != nil {
 		panic("couldn't serialize test batch to thrift")
 	}
@@ -507,7 +507,7 @@ func TestJaegerThriftToSAPMDecoder(t *testing.T) {
 func TestJaegerTraceDecoder(t *testing.T) {
 	var batch jThrift.Batch
 	err := json.Unmarshal([]byte(jaegerBatchJSON), &batch)
-	batchBytes, err := thrift.NewTSerializer().Write(&batch)
+	batchBytes, err := thrift.NewTSerializer().Write(context.Background(), &batch)
 	if err != nil {
 		panic("couldn't serialize test batch to thrift")
 	}
@@ -779,7 +779,7 @@ func BenchmarkJaegerTraceDecoder(b *testing.B) {
 	if err != nil {
 		panic("test json invalid")
 	}
-	batchBytes, err := thrift.NewTSerializer().Write(&batch)
+	batchBytes, err := thrift.NewTSerializer().Write(context.Background(), &batch)
 	if err != nil {
 		panic("couldn't serialize test batch to thrift")
 	}
