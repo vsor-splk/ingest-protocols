@@ -56,7 +56,7 @@ func (is *InputSpan) v2AnnotationsToJaegerLogs(annotations []*signalfxformat.Inp
 func (is *InputSpan) fromZipkinV2(sm *spanfilter.Map) *trace.Span {
 	// Do some basic validation
 	if len(is.BinaryAnnotations) > 0 {
-		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.ID)
+		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.spanFilterValue())
 		return nil
 	}
 
@@ -82,12 +82,16 @@ func (is *InputSpan) addParentChildSpanReferenceToJaegerSpan(span *jaegerpb.Span
 	}
 }
 
+func (is *InputSpan) spanFilterValue() string {
+	return fmt.Sprintf("%s:%s", is.TraceID, is.ID)
+}
+
 // JaegerFromZipkinV2 shortcuts the span conversion process and treats the InputSpan as
 // ZipkinV2 and returns that span directly as SAPM.
 func (is *InputSpan) JaegerFromZipkinV2(sm *spanfilter.Map) *jaegerpb.Span {
 	// Do some basic validation
 	if len(is.BinaryAnnotations) > 0 {
-		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.ID)
+		sm.Add(spanfilter.ZipkinV2BinaryAnnotations, is.spanFilterValue())
 		return nil
 	}
 
@@ -96,12 +100,12 @@ func (is *InputSpan) JaegerFromZipkinV2(sm *spanfilter.Map) *jaegerpb.Span {
 
 	span.SpanID, err = jaegerpb.SpanIDFromString(is.ID)
 	if err != nil {
-		sm.Add(spanfilter.InvalidSpanID, is.ID)
+		sm.Add(spanfilter.InvalidSpanID, is.spanFilterValue())
 		return nil
 	}
 	span.TraceID, err = jaegerpb.TraceIDFromString(is.TraceID)
 	if err != nil {
-		sm.Add(spanfilter.InvalidTraceID, is.ID)
+		sm.Add(spanfilter.InvalidTraceID, is.spanFilterValue())
 		return nil
 	}
 

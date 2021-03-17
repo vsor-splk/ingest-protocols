@@ -1935,8 +1935,8 @@ func TestParseJaegerFromRequest(t *testing.T) {
 		got, err := ParseJaegerSpansFromRequest(req)
 		So(spanfilter.IsInvalid(err), ShouldBeTrue)
 		sm := err.(*spanfilter.Map)
-		So(sm.Invalid[spanfilter.InvalidTraceID], ShouldResemble, []string{"DFEC5BE6328C3A"})
-		So(sm.Invalid[spanfilter.InvalidSpanID], ShouldResemble, []string{spanfilter.InvalidSpanID})
+		So(sm.Invalid[spanfilter.InvalidTraceID], ShouldResemble, []string{"invalidTraceID:DFEC5BE6328C3A"})
+		So(sm.Invalid[spanfilter.InvalidSpanID], ShouldResemble, []string{"fa281a8955571a3a:" + spanfilter.InvalidSpanID})
 		So(got, ShouldNotBeNil)
 
 		//assert that the returned batches match the desired batches
