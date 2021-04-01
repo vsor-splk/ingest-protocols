@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-
 	sfxmodel "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/datapoint/dpsink"
@@ -576,6 +575,7 @@ func TestSignalfxListener(t *testing.T) {
 			}{
 				{"trivial", "[]", "application/json", "/v1/trace", 200},
 				{"valid1", trace.ValidJSON, "application/json", "/v1/trace", 200},
+				{"valid1_utf-8", trace.ValidJSON, "application/json; charset=utf-8", "/v1/trace", 200},
 				{"just an object", "{}", "application/json", "/v1/trace", 400},
 				{"not thrift", "{}", "application/x-thrift", "/v1/trace", 400},
 			} {
