@@ -50,7 +50,7 @@ func (j *JaegerThriftDecoderBase) Read(ctx context.Context, req *http.Request) (
 	})
 
 	batch := &jThrift.Batch{}
-	if err := batch.Read(protocol); err != nil {
+	if err := batch.Read(ctx, protocol); err != nil {
 		return nil, ErrInvalidJaegerTraceFormat
 	}
 
@@ -60,7 +60,7 @@ func (j *JaegerThriftDecoderBase) Read(ctx context.Context, req *http.Request) (
 // NewJaegerThriftDecoderBase returns a new JaegerThriftDecoderBase
 func NewJaegerThriftDecoderBase() *JaegerThriftDecoderBase {
 	return &JaegerThriftDecoderBase{
-		protocolFactory: thrift.NewTBinaryProtocolFactoryDefault(),
+		protocolFactory: thrift.NewTBinaryProtocolFactoryConf(&thrift.TConfiguration{}),
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 0, 2048))
