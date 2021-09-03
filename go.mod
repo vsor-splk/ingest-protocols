@@ -1,6 +1,6 @@
 module github.com/signalfx/ingest-protocols
 
-go 1.14
+go 1.17
 
 require (
 	github.com/apache/thrift v0.14.1
@@ -21,4 +21,24 @@ require (
 	github.com/smartystreets/assertions v1.0.1
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-logfmt/logfmt v0.5.0 // indirect
+	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/gogo/googleapis v1.4.0 // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.14.5 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
+	golang.org/x/text v0.3.5 // indirect
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
+	google.golang.org/grpc v1.33.2 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
