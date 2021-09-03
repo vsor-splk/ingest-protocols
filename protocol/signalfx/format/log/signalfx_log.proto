@@ -15,7 +15,7 @@ message ResourceLogs {
     repeated LogRecord logRecords = 2;
 }
 
-// model is based off https://github.com/open-telemetry/oteps/blob/master/text/0097-log-data-model.md#log-and-event-record-definition
+// model is based off https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md#log-and-event-record-definition
 message LogRecord {
     TimeField Timestamp = 1;
     bytes TraceID = 2;
