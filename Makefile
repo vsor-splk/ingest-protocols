@@ -23,7 +23,7 @@ verify: install-tools lint test
 .PHONY: install-tools
 install-tools: golangci gocov
 gocov: ; $(info $(M) downloading gocov)
-	go get github.com/axw/gocov/gocov
+	go install github.com/axw/gocov/gocov@v1.0.0
 golangci: ; $(info $(M) downloading golangci)
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
 
