@@ -578,17 +578,18 @@ func ParseJaegerSpansFromRequest(req *http.Request) ([]*jaegerpb.Span, error) {
 	// Don't let an error converting one set of spans prevent other valid spans
 	// in the same request from being rejected.
 	for _, is := range input {
-		inputSpan := (*InputSpan)(is)
-		if inputSpan.isDefinitelyZipkinV2() {
-			if s := inputSpan.JaegerFromZipkinV2(sm); s != nil {
-				spans = append(spans, s)
-			}
-		} else {
-			// TODO: optimize conversion of zipkin v1 to SAPM
-			if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
-				// Zipkin v1 spans can map to multiple spans in Zipkin v2
-				for _, s := range derived {
-					spans = append(spans, translator.SAPMSpanFromSFXSpan(s, sm))
+		if inputSpan := (*InputSpan)(is); inputSpan != nil {
+			if inputSpan.isDefinitelyZipkinV2() {
+				if s := inputSpan.JaegerFromZipkinV2(sm); s != nil {
+					spans = append(spans, s)
+				}
+			} else {
+				// TODO: optimize conversion of zipkin v1 to SAPM
+				if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
+					// Zipkin v1 spans can map to multiple spans in Zipkin v2
+					for _, s := range derived {
+						spans = append(spans, translator.SAPMSpanFromSFXSpan(s, sm))
+					}
 				}
 			}
 		}
@@ -623,17 +624,18 @@ func (decoder *JSONTraceDecoderV1) Read(ctx context.Context, req *http.Request) 
 	// Don't let an error converting one set of spans prevent other valid spans
 	// in the same request from being rejected.
 	for _, is := range input {
-		inputSpan := (*InputSpan)(is)
-		if inputSpan.isDefinitelyZipkinV2() {
-			is.Span.Timestamp = signalfxformat.GetPointerToInt64(inputSpan.Timestamp)
-			is.Span.Duration = signalfxformat.GetPointerToInt64(inputSpan.Duration)
-			if s := inputSpan.fromZipkinV2(sm); s != nil {
-				spans = append(spans, s)
-			}
-		} else {
-			if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
-				// Zipkin v1 spans can map to multiple spans in Zipkin v2
-				spans = append(spans, derived...)
+		if inputSpan := (*InputSpan)(is); inputSpan != nil {
+			if inputSpan.isDefinitelyZipkinV2() {
+				is.Span.Timestamp = signalfxformat.GetPointerToInt64(inputSpan.Timestamp)
+				is.Span.Duration = signalfxformat.GetPointerToInt64(inputSpan.Duration)
+				if s := inputSpan.fromZipkinV2(sm); s != nil {
+					spans = append(spans, s)
+				}
+			} else {
+				if derived := inputSpan.fromZipkinV1(); len(derived) > 0 {
+					// Zipkin v1 spans can map to multiple spans in Zipkin v2
+					spans = append(spans, derived...)
+				}
 			}
 		}
 	}
