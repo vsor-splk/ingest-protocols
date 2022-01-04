@@ -29,24 +29,26 @@ func NewDatumValue(val sfxmodel.Datum) datapoint.Value {
 
 // ValueToValue converts the v2 JSON value to a core api Value
 func ValueToValue(v ValueToSend) (datapoint.Value, error) {
-	f, ok := v.(float64)
-	if ok {
-		if f == float64(int64(f)) {
-			return datapoint.NewIntValue(int64(f)), nil
+	if v != nil {
+		f, ok := v.(float64)
+		if ok {
+			if f == float64(int64(f)) {
+				return datapoint.NewIntValue(int64(f)), nil
+			}
+			return datapoint.NewFloatValue(f), nil
 		}
-		return datapoint.NewFloatValue(f), nil
-	}
-	i, ok := v.(int64)
-	if ok {
-		return datapoint.NewIntValue(i), nil
-	}
-	i2, ok := v.(int)
-	if ok {
-		return datapoint.NewIntValue(int64(i2)), nil
-	}
-	s, ok := v.(string)
-	if ok {
-		return datapoint.NewStringValue(s), nil
+		i, ok := v.(int64)
+		if ok {
+			return datapoint.NewIntValue(i), nil
+		}
+		i2, ok := v.(int)
+		if ok {
+			return datapoint.NewIntValue(int64(i2)), nil
+		}
+		s, ok := v.(string)
+		if ok {
+			return datapoint.NewStringValue(s), nil
+		}
 	}
 	return nil, fmt.Errorf("unable to convert value: %s", v)
 }
