@@ -229,9 +229,19 @@ func SetupProtobufV2DatapointPaths(r *mux.Router, handler http.Handler) {
 	SetupProtobufV2ByPaths(r, handler, "/v2/datapoint")
 }
 
+// setupProtobufByPathsCommon tells the router which paths the given handler
+func setupProtobufByPathsCommon(r *mux.Router, handler http.Handler, path string) {
+	r.Path(path).Methods("POST").Headers("Content-Type", "application/x-protobuf").Handler(handler)
+}
+
 // SetupProtobufV2ByPaths tells the router which paths the given handler (which should handle v2 protobufs)
 func SetupProtobufV2ByPaths(r *mux.Router, handler http.Handler, path string) {
-	r.Path(path).Methods("POST").Headers("Content-Type", "application/x-protobuf").Handler(handler)
+	setupProtobufByPathsCommon(r, handler, path)
+}
+
+// SetupProtobufV3ByPaths tells the router which paths the given handler (which should handle v3 protobufs)
+func SetupProtobufV3ByPaths(r *mux.Router, handler http.Handler, path string) {
+	setupProtobufByPathsCommon(r, handler, path)
 }
 
 func setupJSONV2(ctx context.Context, r *mux.Router, sink Sink, logger log.Logger, debugContext *web.HeaderCtxFlag, httpChain web.NextConstructor, counter *dpsink.Counter) sfxclient.Collector {

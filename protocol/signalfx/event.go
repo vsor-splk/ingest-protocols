@@ -110,3 +110,22 @@ func setupProtobufEventV2(ctx context.Context, r *mux.Router, sink Sink, logger 
 func SetupProtobufV2EventPaths(r *mux.Router, handler http.Handler) {
 	SetupProtobufV2ByPaths(r, handler, "/v2/event")
 }
+
+// TODO: update with ProtobufEventDecoderV3 when it's available.
+func setupProtobufEventV3(ctx context.Context, r *mux.Router, sink Sink, logger log.Logger, debugContext *web.HeaderCtxFlag, httpChain web.NextConstructor, counter *dpsink.Counter) sfxclient.Collector {
+	additionalConstructors := []web.Constructor{}
+	if debugContext != nil {
+		additionalConstructors = append(additionalConstructors, debugContext)
+	}
+	handler, st := SetupChain(ctx, sink, "protobuf_event_v3", func(s Sink) ErrorReader {
+		return &ProtobufEventDecoderV2{Sink: s, Logger: logger}
+	}, httpChain, logger, counter, additionalConstructors...)
+	SetupProtobufV3EventPaths(r, handler)
+
+	return st
+}
+
+// SetupProtobufV3EventPaths tells the router which paths the given handler (which should handle v3 protobufs)
+func SetupProtobufV3EventPaths(r *mux.Router, handler http.Handler) {
+	SetupProtobufV3ByPaths(r, handler, "/v3/event")
+}

@@ -241,6 +241,7 @@ func NewListener(sink Sink, conf *ListenerConfig) (*ListenerServer, error) {
 		setupJSONV1(conf.RootContext, r, sink, &listenServer.metricHandler, conf.Logger, conf.Counter, conf.HTTPChain),
 		setupProtobufV2(conf.RootContext, r, sink, conf.Logger, conf.DebugContext, conf.HTTPChain, conf.Counter),
 		setupProtobufEventV2(conf.RootContext, r, sink, conf.Logger, conf.DebugContext, conf.HTTPChain, conf.Counter),
+		setupProtobufEventV3(conf.RootContext, r, sink, conf.Logger, conf.DebugContext, conf.HTTPChain, conf.Counter),
 		setupJSONV2(conf.RootContext, r, sink, conf.Logger, conf.DebugContext, conf.HTTPChain, conf.Counter),
 		setupJSONEventV2(conf.RootContext, r, sink, conf.Logger, conf.DebugContext, conf.HTTPChain, conf.Counter),
 		setupCollectd(conf.RootContext, r, sink, conf.DebugContext, conf.HTTPChain, conf.Logger, conf.Counter),
