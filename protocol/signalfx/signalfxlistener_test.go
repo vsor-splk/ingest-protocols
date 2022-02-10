@@ -61,6 +61,10 @@ func TestSignalfxProtoDecoders(t *testing.T) {
 		decoder := ProtobufEventDecoderV2{Logger: log.Discard}
 		readerCheck(&decoder)
 	})
+	Convey("a setup ProtobufDecoderV2", t, func() {
+		decoder := ProtobufEventDecoderV3{Logger: log.Discard}
+		readerCheck(&decoder)
+	})
 }
 
 func TestSignalfxProtobufV1Decoder(t *testing.T) {

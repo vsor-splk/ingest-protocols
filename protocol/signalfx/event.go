@@ -16,6 +16,7 @@ import (
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/web"
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
+	signalfxlog "github.com/signalfx/ingest-protocols/protocol/signalfx/format/log"
 )
 
 // ProtobufEventDecoderV2 decodes protocol buffers in signalfx's v2 format and sends them to Sink
@@ -76,6 +77,39 @@ func (decoder *JSONEventDecoderV2) Read(ctx context.Context, req *http.Request) 
 	return decoder.Sink.AddEvents(ctx, evts)
 }
 
+// ProtobufEventDecoderV3 decodes protocol buffers in signalfx's v3 format, which follows OTEL spec and sends them to Sink
+type ProtobufEventDecoderV3 struct {
+	Sink   dpsink.ESink
+	Logger log.Logger
+}
+
+func (decoder *ProtobufEventDecoderV3) Read(ctx context.Context, req *http.Request) (err error) {
+	jeff := buffs.Get().(*bytes.Buffer)
+	defer buffs.Put(jeff)
+	jeff.Reset()
+	if err = readFromRequest(jeff, req, decoder.Logger); err != nil {
+		return err
+	}
+	var msg signalfxlog.LogRequest
+	if err = proto.Unmarshal(jeff.Bytes(), &msg); err != nil {
+		return err
+	}
+	evts := make([]*event.Event, 0, len(msg.GetResourceLogs()))
+	for _, protoDb := range msg.GetResourceLogs() {
+		resources := protoDb.GetResource()
+		dims := createDimensionsFromResources(resources)
+		for _, protoL := range protoDb.GetLogRecords() {
+			if e, err1 := NewProtobufEventV3(protoL, resources, dims); err1 == nil {
+				evts = append(evts, e)
+			}
+		}
+	}
+
+	if len(evts) > 0 {
+		err = decoder.Sink.AddEvents(ctx, evts)
+	}
+	return err
+}
 func setupJSONEventV2(ctx context.Context, r *mux.Router, sink Sink, logger log.Logger, debugContext *web.HeaderCtxFlag, httpChain web.NextConstructor, counter *dpsink.Counter) sfxclient.Collector {
 	additionalConstructors := []web.Constructor{}
 	if debugContext != nil {

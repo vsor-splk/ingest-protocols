@@ -2,6 +2,8 @@ package signalfx
 
 import (
 	"errors"
+	"fmt"
+	"github.com/signalfx/golib/v3/event"
 	"math"
 	"testing"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/signalfx/golib/v3/datapoint"
 	"github.com/signalfx/golib/v3/pointer"
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
+	signalfxlog "github.com/signalfx/ingest-protocols/protocol/signalfx/format/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -169,4 +172,290 @@ func TestNewDatumValue(t *testing.T) {
 			So(i1, ShouldEqual, NewDatumValue(sfxmodel.Datum{IntValue: &i1}).(datapoint.IntValue).Int())
 		})
 	})
+}
+
+func TestResourceDimensions(t *testing.T) {
+	Convey("given a resource map", t, func() {
+			protoEvent := signalfxlog.KeyValueList{
+				Values: []*signalfxlog.KeyValue{
+					{
+						Key:   "bool_key",
+						Value: &signalfxlog.Value{Value: &signalfxlog.Value_BoolValue{BoolValue: true}},
+					},
+					{
+						Key:   "int_key",
+						Value: &signalfxlog.Value{Value: &signalfxlog.Value_IntValue{IntValue: 42}},
+					},
+					{
+						Key:   "float_key",
+						Value: &signalfxlog.Value{Value: &signalfxlog.Value_DoubleValue{DoubleValue: 42.24}},
+					},
+					{
+						Key:   "string_key",
+						Value: &signalfxlog.Value{Value: &signalfxlog.Value_StringValue{StringValue: "string value"}},
+					},
+					{
+						Key: "array_key",
+						Value: &signalfxlog.Value{
+							Value: &signalfxlog.Value_ArrayValue{
+								ArrayValue: &signalfxlog.ValueList{
+									Values: []*signalfxlog.Value{
+										{
+											Value: &signalfxlog.Value_IntValue{IntValue: 12},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			res := createDimensionsFromResources(&protoEvent)
+			fmt.Printf(res["array_values"])
+			So(res["array_key"], ShouldEqual, "values:<int_value:12 > ")
+			So(res["bool_key"], ShouldEqual, "true")
+			So(res["int_key"], ShouldEqual, "42")
+			So(res["float_key"], ShouldEqual, "42.24")
+			So(res["string_key"], ShouldEqual, "string value")
+			fmt.Printf("%v", res)
+
+	})
+}
+
+func TestConvertTS(t *testing.T) {
+	Convey("given an incoming timestamp", t, func(){
+		Convey("empty timestamps should be rejected", func() {
+			_, err := convertTs(nil)
+			So(err, ShouldBeError, errTimestampNotSet)
+		})
+
+		Convey("zero timestamp should be rejected", func(){
+			ts := &signalfxlog.TimeField{Value: &signalfxlog.TimeField_NumericValue{NumericValue: 0}}
+			_, err := convertTs(ts)
+			So(err, ShouldBeError, errTimestampNotSet)
+		})
+
+		Convey("empty string timestamp should be rejected", func(){
+			ts := &signalfxlog.TimeField{Value: &signalfxlog.TimeField_StringValue{StringValue: ""}}
+			_, err := convertTs(ts)
+			So(err, ShouldBeError, errTimestampNotSet)
+		})
+
+		Convey("valid numerical timestamp should be accepted", func(){
+			ts := &signalfxlog.TimeField{Value: &signalfxlog.TimeField_NumericValue{NumericValue: 1556793030000}}
+			tsn, err := convertTs(ts)
+			So(err, ShouldBeNil)
+			So(tsn, ShouldEqual, 1556793030000)
+		})
+
+		Convey("valid string timestamp should be accepted", func(){
+			ts := &signalfxlog.TimeField{Value: &signalfxlog.TimeField_StringValue{StringValue: "1556793030000"}}
+			tsn, err := convertTs(ts)
+			So(err, ShouldBeNil)
+			So(tsn, ShouldEqual, 1556793030000)
+		})
+
+	})
+}
+
+func createTestResource(b bool, i int64, s string) *signalfxlog.KeyValueList {
+	return &signalfxlog.KeyValueList{
+		Values: []*signalfxlog.KeyValue{
+			{
+				Key:   "resource_bool_key",
+				Value: &signalfxlog.Value{Value: &signalfxlog.Value_BoolValue{BoolValue: b}},
+			},
+			{
+				Key:   "resource_int_key",
+				Value: &signalfxlog.Value{Value: &signalfxlog.Value_IntValue{IntValue: i}},
+			},
+			{
+				Key: "resource_string_key",
+				Value: &signalfxlog.Value{Value: &signalfxlog.Value_StringValue{StringValue: s}},
+			},
+		},
+	}
+}
+
+func createTestLogRecord(attrs *signalfxlog.KeyValueList) *signalfxlog.LogRecord {
+	return &signalfxlog.LogRecord{
+		Timestamp:            &signalfxlog.TimeField{
+			Value: &signalfxlog.TimeField_NumericValue{
+				NumericValue: 1556793030000,
+			},
+		},
+		TraceID:              []byte("1234"),
+		SpanID:               []byte("5678"),
+		TraceFlags:           10,
+		SeverityText:         "sev text",
+		SeverityNumber:       8,
+		Body:                 &signalfxlog.Value{
+			Value: &signalfxlog.Value_StringValue{
+				StringValue: "body value"},
+		},
+		Attributes: attrs,
+	}
+
+}
+
+func TestCreateEventMeta(t *testing.T) {
+	Convey("given a log record and resources", t, func(){
+		res := createTestResource(true, 42, "string_value")
+		lr := createTestLogRecord(createTestAttributes(16, true))
+		meta := createEventMeta(lr, res)
+		extras := meta["sfx_payload_extras"].(map[string]interface{})
+		So(extras["TraceID"], ShouldResemble, lr.GetTraceID())
+		So(extras["SpanID"], ShouldResemble, lr.GetSpanID())
+		So(extras["TraceFlags"], ShouldEqual, lr.GetTraceFlags())
+		So(extras["SeverityText"], ShouldEqual, lr.GetSeverityText())
+		So(extras["SeverityNumber"], ShouldEqual, lr.GetSeverityNumber())
+		So(extras["Body"], ShouldEqual, lr.GetBody())
+		So(extras["Resource"], ShouldResemble, res.GetValues())
+		So(meta["sfx_event_version"], ShouldEqual, "v3")
+	})
+}
+
+func createTestAttributes(i int64, b bool) *signalfxlog.KeyValueList {
+	return &signalfxlog.KeyValueList{
+		Values: []*signalfxlog.KeyValue{
+			{
+				Key:   "bool_key",
+				Value: &signalfxlog.Value{Value: &signalfxlog.Value_BoolValue{BoolValue: b}},
+			},
+			{
+				Key:   "int_key",
+				Value: &signalfxlog.Value{Value: &signalfxlog.Value_IntValue{IntValue: i}},
+			},
+		},
+	}
+
+}
+func createTestAttributesWithEventInfo(et string, ec, i int64, b bool) *signalfxlog.KeyValueList{
+	attrs := createTestAttributes(i, b)
+	attrs.Values = append(attrs.GetValues(), &signalfxlog.KeyValue{
+		Key: otelEventType,
+		Value: &signalfxlog.Value{Value: &signalfxlog.Value_StringValue{StringValue: et}},
+	})
+	attrs.Values = append(attrs.GetValues(), &signalfxlog.KeyValue{
+		 Key: otelCategory,
+		 Value: &signalfxlog.Value{Value: &signalfxlog.Value_IntValue{IntValue: ec}},
+	} )
+	return attrs
+}
+
+func TestCreatePropertiesFromAttributes(t *testing.T) {
+	Convey("given a list of attributes", t, func() {
+		Convey("an property map with empty categories and type is created", func() {
+		attrs :=           &signalfxlog.KeyValueList{
+			Values: []*signalfxlog.KeyValue{
+				{
+					Key:   "bool_key",
+					Value: &signalfxlog.Value{Value: &signalfxlog.Value_BoolValue{BoolValue: true}},
+				},
+				{
+					Key:   "int_key",
+					Value: &signalfxlog.Value{Value: &signalfxlog.Value_IntValue{IntValue: 42}},
+				},
+			},
+		}
+		props, tp, cat, err := createPropertiesFromAttributes(attrs)
+		So(tp, ShouldEqual, "")
+		So(cat, ShouldEqual, 0)
+		So(err, ShouldBeNil)
+		So(props["bool_key"], ShouldEqual, attrs.GetValues()[0].GetValue().GetBoolValue())
+		So(props["int_key"], ShouldEqual, attrs.GetValues()[1].GetValue().GetIntValue())
+		})
+
+		Convey("a property map with nil values generates an error", func(){
+			attrs :=           &signalfxlog.KeyValueList{
+				Values: []*signalfxlog.KeyValue{
+					{
+						Key:   "bool_key",
+						Value: nil,
+					},
+				},
+			}
+			_, _, _, err := createPropertiesFromAttributes(attrs)
+			So(err, ShouldBeError, errPropertyValueNotSet)
+		})
+
+		Convey("a property map with type and category is created", func(){
+			attrs := createTestAttributesWithEventInfo("event_test", 2, 42, true)
+			props, tp, cat, err := createPropertiesFromAttributes(attrs)
+			So(tp, ShouldEqual, "event_test")
+			So(cat, ShouldEqual, 2)
+			So(err, ShouldBeNil)
+			So(props["bool_key"], ShouldEqual, attrs.GetValues()[0].GetValue().GetBoolValue())
+			So(props["int_key"], ShouldEqual, attrs.GetValues()[1].GetValue().GetIntValue())
+			// We shouldn't add the category and type to the properties map
+			So(len(props), ShouldEqual, 2)
+		})
+	})
+}
+
+func TestNewProtobufEventV3(t *testing.T) {
+	Convey("given a log record", t, func(){
+		res1 := createTestResource(true, 42, "string_value")
+		dims := createDimensionsFromResources(res1)
+		//res2 := createTestResource(false, 24, "another_string")
+		attrs1 := createTestAttributesWithEventInfo("event-type1", 2, 4, true)
+		//attrs2 := createTestAttributesWithEventInfo("event-type2", 1, 10, false)
+		Convey("accept a valid log record", func(){
+			logRecord := createTestLogRecord(attrs1)
+			e, err := NewProtobufEventV3(logRecord, res1, dims)
+			So(err, ShouldBeNil)
+			So(e.Category, ShouldEqual, event.USERDEFINED)
+			So(len(e.Dimensions), ShouldEqual, 3)
+			So(e.EventType, ShouldEqual, "event-type1")
+			So(len(e.Properties), ShouldEqual, 2)
+
+		})
+		Convey("an invalid log record doesn't create an event", func(){
+			logRecord := createTestLogRecord(attrs1)
+			logRecord.Timestamp = nil
+			e, err := NewProtobufEventV3(logRecord, res1, dims)
+			So(err, ShouldBeError, errTimestampNotSet)
+			So(e, ShouldBeNil)
+		})
+/*
+		logRequest := signalfxlog.LogRequest{
+			ResourceLogs:         []*signalfxlog.ResourceLogs{
+				{
+					Resource:             res1,
+					LogRecords:           []*signalfxlog.LogRecord{
+						createTestLogRecord(attrs1),
+					},
+				},
+				{
+					Resource: res2,
+					LogRecords: []*signalfxlog.LogRecord{
+						createTestLogRecord(attrs2),
+					},
+				},
+			},
+		}
+ */
+
+	})
+
+		/*
+		protoEvent := &sfxmodel.Event{
+			EventType:  "mwp.test2",
+			Dimensions: []*sfxmodel.Dimension{},
+			Properties: []*sfxmodel.Property{
+				{
+					Key:   "version",
+					Value: &sfxmodel.PropertyValue{},
+				},
+			},
+		}
+		Convey("should error when converted", func() {
+			_, err := NewProtobufEvent(protoEvent)
+			So(err, ShouldEqual, errPropertyValueNotSet)
+		})
+
+
+	})
+		*/
 }
