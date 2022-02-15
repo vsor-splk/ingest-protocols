@@ -21,6 +21,7 @@ require (
 	github.com/smartystreets/assertions v1.0.1
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0
+	go.opentelemetry.io/proto/otlp v0.7.0
 	google.golang.org/grpc v1.40.0
 )
 
