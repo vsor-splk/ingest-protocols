@@ -16,6 +16,10 @@
 
 # IDEs
 .idea/
+*.iml
 
 # Test coverage output
 coverage.out.all
+
+# Maven build dir
+target/
