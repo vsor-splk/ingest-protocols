@@ -15,6 +15,7 @@ import (
 	"github.com/signalfx/golib/v3/pointer"
 	"github.com/signalfx/golib/v3/sfxclient"
 	"github.com/signalfx/golib/v3/web"
+	"github.com/signalfx/ingest-protocols/protocol"
 	signalfxformat "github.com/signalfx/ingest-protocols/protocol/signalfx/format"
 )
 
@@ -28,7 +29,7 @@ func (decoder *ProtobufEventDecoderV2) Read(ctx context.Context, req *http.Reque
 	jeff := buffs.Get().(*bytes.Buffer)
 	defer buffs.Put(jeff)
 	jeff.Reset()
-	if err = readFromRequest(jeff, req, decoder.Logger); err != nil {
+	if err = protocol.ReadFromRequest(jeff, req, decoder.Logger); err != nil {
 		return err
 	}
 	var msg sfxmodel.EventUploadMessage
